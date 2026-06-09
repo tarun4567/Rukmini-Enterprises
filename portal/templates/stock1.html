@@ -9,11 +9,6 @@
         <h1>Stock 1 Catalog</h1>
         <p>A structured list of all stock items, showing entry dates, companies, prices, and quantities.</p>
     </div>
-    <div style="display: flex; gap: 12px;">
-        <a href="{% url 'stock_add' %}" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> Add New Stock
-        </a>
-    </div>
 </div>
 
 <!-- Filters & Search Bar -->
@@ -21,16 +16,6 @@
     <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
         <input type="text" class="form-control" placeholder="Search by name, SKU or company..." data-search-table="stock1Table">
-    </div>
-    
-    <div class="filter-actions">
-        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Category Filter:</span>
-        <a href="{% url 'stock1' %}" class="btn btn-outline btn-sm {% if not active_category %}btn-secondary{% endif %}">All</a>
-        {% for cat in categories %}
-            <a href="{% url 'stock1' %}?category={{ cat.slug }}" class="btn btn-outline btn-sm {% if active_category == cat.slug %}btn-secondary{% endif %}">
-                {{ cat.name }}
-            </a>
-        {% endfor %}
     </div>
 </div>
 

@@ -27,12 +27,12 @@
                 
                 <div class="form-group">
                     <label for="id_customer_name" class="form-label">Customer Name *</label>
-                    <input type="text" id="id_customer_name" name="customer_name" class="form-control" placeholder="e.g. Walking Customer" required>
+                    <input type="text" id="id_customer_name" name="customer_name" class="form-control" value="{{ cust_name|default:'' }}" placeholder="e.g. Walking Customer" required>
                 </div>
 
                 <div class="form-group">
                     <label for="id_customer_address" class="form-label">Customer Address</label>
-                    <textarea id="id_customer_address" name="customer_address" class="form-control" rows="2" placeholder="Address (Optional)"></textarea>
+                    <textarea id="id_customer_address" name="customer_address" class="form-control" rows="2" placeholder="Address (Optional)">{{ cust_address|default:'' }}</textarea>
                 </div>
 
                 <div class="form-group">
@@ -40,7 +40,7 @@
                     <select id="id_product" name="product" class="form-control" required>
                         <option value="">-- Choose Product --</option>
                         {% for product in products %}
-                            <option value="{{ product.id }}" data-price="{{ product.selling_price }}" data-stock="{{ product.stock_quantity }}">
+                            <option value="{{ product.id }}" data-price="{{ product.selling_price }}" data-stock="{{ product.stock_quantity }}" {% if selected_product_id == product.id %}selected{% endif %}>
                                 {{ product.name }} (In Stock: {{ product.stock_quantity }})
                             </option>
                         {% endfor %}
@@ -50,11 +50,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="id_quantity" class="form-label">Quantity *</label>
-                        <input type="number" id="id_quantity" name="quantity" class="form-control" value="1" min="1" required>
+                        <input type="number" id="id_quantity" name="quantity" class="form-control" value="{{ quantity|default:1 }}" min="1" required>
                     </div>
                     <div class="form-group">
                         <label for="id_rate" class="form-label">Rate / Unit ($) *</label>
-                        <input type="number" id="id_rate" name="rate" class="form-control" step="0.01" value="0.00" required>
+                        <input type="number" id="id_rate" name="rate" class="form-control" step="0.01" value="{{ rate|default:'0.00' }}" required>
                     </div>
                 </div>
 
@@ -65,7 +65,7 @@
                     </div>
                     <div class="form-group">
                         <label for="id_amount_given" class="form-label">Amount Given ($) *</label>
-                        <input type="number" id="id_amount_given" name="amount_given" class="form-control" step="0.01" value="0.00" required>
+                        <input type="number" id="id_amount_given" name="amount_given" class="form-control" step="0.01" value="{{ amount_given|default:'0.00' }}" required>
                     </div>
                 </div>
 
@@ -144,6 +144,19 @@ document.addEventListener('DOMContentLoaded', () => {
             changeInput.style.backgroundColor = "var(--danger-light)";
         }
     }
+
+    // 3. Frontend validation on form submit
+    billingForm.addEventListener('submit', (e) => {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const stock = parseInt(selectedOption.getAttribute('data-stock') || 0);
+            const qty = parseInt(quantityInput.value || 0);
+            if (qty > stock) {
+                e.preventDefault();
+                alert(`Error: Cannot generate bill. Requested quantity (${qty}) exceeds available stock (${stock}) for this product.`);
+            }
+        }
+    });
 
     // Initial calculation in case inputs preserve values on refresh
     calculateTotal();

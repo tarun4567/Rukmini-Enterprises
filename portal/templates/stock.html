@@ -136,7 +136,8 @@
                             <th>Company Name</th>
                             <th>Stock Entered</th>
                             <th>Amt</th>
-                            <th>Qty</th>
+                            <th>Initial Qty</th>
+                            <th>Available Qty</th>
                             <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
@@ -165,7 +166,8 @@
                             <td>{{ product.company_name|default:"General" }}</td>
                             <td><span style="font-size: 12px; color: var(--text-muted);">{{ product.stock_entered|default:"Not Logged" }}</span></td>
                             <td><strong>${{ product.selling_price }}</strong></td>
-                            <td><strong>{{ product.initial_quantity }}</strong></td>
+                            <td>{{ product.initial_quantity }}</td>
+                            <td><strong>{{ product.stock_quantity }}</strong></td>
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; gap: 8px;">
                                     <a href="{% url 'stock_edit' product.id %}" class="btn btn-outline btn-sm" style="height: 30px; padding: 0 10px;" title="Edit Stock Item">
@@ -182,7 +184,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                            <td colspan="7" style="text-align: center; padding: 36px; color: var(--text-muted);">
                                 No stock records available.
                             </td>
                         </tr>

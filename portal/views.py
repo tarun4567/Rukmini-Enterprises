@@ -107,15 +107,25 @@ def billing_view(request):
         
         product = get_object_or_404(Product, id=product_id)
         
+        if product.stock_quantity < quantity:
+            messages.error(
+                request,
+                f"Error: Cannot generate bill. Requested quantity ({quantity}) exceeds available stock ({product.stock_quantity}) for {product.name}."
+            )
+            context = {
+                'products': Product.objects.all(),
+                'cust_name': cust_name,
+                'cust_address': cust_address,
+                'selected_product_id': product.id,
+                'quantity': quantity,
+                'rate': rate,
+                'amount_given': amount_given,
+            }
+            return render(request, 'billing.html', context)
+            
         total = quantity * rate
         amount_to_be_given = amount_given - total
         
-        if product.stock_quantity < quantity:
-            messages.warning(
-                request,
-                f"Warning: Quantity ordered ({quantity}) exceeds stock level ({product.stock_quantity}) for {product.name}."
-            )
-            
         product.stock_quantity -= quantity
         product.save()
         
@@ -394,19 +404,8 @@ def stock_add_view(request):
 
 @admin_required
 def stock1_view(request):
-    categories = Category.objects.all()
-    active_category = request.GET.get('category')
-    
     products = Product.objects.all().order_by('-id')
-    if active_category:
-        products = products.filter(category__slug=active_category)
-        
-    context = {
-        'products': products,
-        'categories': categories,
-        'active_category': active_category,
-    }
-    return render(request, 'stock1.html', context)
+    return render(request, 'stock1.html', {'products': products})
 
 
 @admin_required
