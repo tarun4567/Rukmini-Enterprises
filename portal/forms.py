@@ -1,24 +1,6 @@
 from django import forms
 from .models import Product, Category
 
-class ProductForm(forms.ModelForm):
-    class Meta:
-        model = Product
-        fields = [
-            'name', 'sku', 'category', 'description',
-            'purchase_price', 'selling_price', 'stock_quantity', 'min_stock_level', 'image'
-        ]
-
-    def clean_sku(self):
-        sku = self.cleaned_data.get('sku').upper()
-        # Verify uniqueness excluding current instance if editing
-        qs = Product.objects.filter(sku=sku)
-        if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise forms.ValidationError("A product with this SKU already exists.")
-        return sku
-
 
 class StockForm(forms.ModelForm):
     class Meta:

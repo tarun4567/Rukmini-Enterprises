@@ -12,10 +12,6 @@ urlpatterns = [
     path('stock/edit/<int:pk>/', views.stock_edit_view, name='stock_edit'),
     path('stock/delete/<int:pk>/', views.stock_delete_view, name='stock_delete'),
 
-    path('inventory/', views.inventory_view, name='inventory'),
-    path('inventory/add/', views.product_add_view, name='product_add'),
-    path('inventory/edit/<int:pk>/', views.product_edit_view, name='product_edit'),
-    path('inventory/delete/<int:pk>/', views.product_delete_view, name='product_delete'),
     path('customers/', views.customers_view, name='customers'),
     path('customers/add/', views.customer_add_view, name='customer_add'),
     path('orders/', views.orders_view, name='orders'),

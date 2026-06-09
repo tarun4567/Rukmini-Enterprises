@@ -10,7 +10,7 @@ import datetime
 import json
 
 from .models import Category, Product, Customer, Order, OrderItem, Bill
-from .forms import ProductForm, StockForm
+from .forms import StockForm
 
 # 1. Custom Role-Based Decorators
 def admin_required(view_func):
@@ -257,64 +257,7 @@ def dashboard_view(request):
     return render(request, 'dashboard.html', context)
 
 
-# 6. Inventory View & CRUD (Admin Only)
-@admin_required
-def inventory_view(request):
-    categories = Category.objects.all()
-    active_category = request.GET.get('category')
-    
-    products = Product.objects.all()
-    if active_category:
-        products = products.filter(category__slug=active_category)
-        
-    context = {
-        'products': products,
-        'categories': categories,
-        'active_category': active_category,
-    }
-    return render(request, 'inventory.html', context)
-
-
-@admin_required
-def product_add_view(request):
-    categories = Category.objects.all()
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES)
-        if form.is_valid():
-            product = form.save()
-            messages.success(request, f"Product '{product.name}' was added successfully.")
-            return redirect('inventory')
-    else:
-        form = ProductForm()
-    return render(request, 'product_form.html', {'form': form, 'categories': categories})
-
-
-@admin_required
-def product_edit_view(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    categories = Category.objects.all()
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES, instance=product)
-        if form.is_valid():
-            product = form.save()
-            messages.success(request, f"Product '{product.name}' was updated successfully.")
-            return redirect('inventory')
-    else:
-        form = ProductForm(instance=product)
-    return render(request, 'product_form.html', {'form': form, 'categories': categories})
-
-
-@admin_required
-def product_delete_view(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    if request.method == 'POST':
-        name = product.name
-        product.delete()
-        messages.warning(request, f"Product '{name}' was deleted from inventory.")
-    return redirect('inventory')
-
-
-# 7. Customers CRM (Admin Only)
+# 6. Customers CRM (Admin Only)
 @admin_required
 def customers_view(request):
     customers = Customer.objects.order_by('-date_created')
@@ -341,7 +284,7 @@ def customer_add_view(request):
     return redirect('customers')
 
 
-# 8. Orders View & CRUD (Admin Only)
+# 7. Orders View & CRUD (Admin Only)
 @admin_required
 def orders_view(request):
     status_choices = Order.STATUS_CHOICES
@@ -424,7 +367,7 @@ def order_delete_view(request, pk):
     return redirect('orders')
 
 
-# 9. Stock & Stock 1 Views (Admin Only)
+# 8. Stock & Stock 1 Views (Admin Only)
 @admin_required
 def stock_add_view(request):
     categories = Category.objects.all()
