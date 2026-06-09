@@ -9,6 +9,26 @@
         <h1>Stock 1 Catalog</h1>
         <p>A structured list of all stock items, showing entry dates, companies, prices, and quantities.</p>
     </div>
+    <!-- Download Dropdown -->
+    <div style="position: relative; display: inline-block;">
+        <button onclick="var m=document.getElementById('stockDownloadMenu'); m.style.display = m.style.display==='block'?'none':'block';"
+            class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+            <i class="fa-solid fa-download"></i> Download Report
+            <i class="fa-solid fa-chevron-down" style="font-size: 11px;"></i>
+        </button>
+        <div id="stockDownloadMenu" style="display:none; position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; overflow: hidden;">
+            <a href="{% url 'stock_report_excel' %}"
+               style="display: flex; align-items: center; gap: 10px; padding: 11px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+               onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                <i class="fa-solid fa-file-excel" style="color: #16a34a; font-size: 15px;"></i> Download Excel
+            </a>
+            <a href="{% url 'stock_report_pdf' %}"
+               style="display: flex; align-items: center; gap: 10px; padding: 11px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; border-top: 1px solid var(--border-color); transition: background 0.15s;"
+               onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 15px;"></i> Download PDF
+            </a>
+        </div>
+    </div>
 </div>
 
 <!-- Filters & Search Bar -->

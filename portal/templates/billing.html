@@ -7,159 +7,281 @@
 <div class="page-header">
     <div class="page-title-group">
         <h1>Day Billing Counter</h1>
-        <p>Record counter sales, compute totals, track payments, and verify cash register handovers.</p>
+        <p>Record counter sales with multiple products, compute totals, track payments.</p>
     </div>
     <div style="font-size: 14px; font-weight: 600; color: var(--text-muted); background-color: var(--bg-card); padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
         <i class="fa-solid fa-calendar-day"></i> Session Date: <strong>{{ today|date:"M d, Y" }}</strong>
     </div>
 </div>
 
-<div style="max-width: 600px; margin: 0 auto;">
-    
-    <!-- Billing Input Form -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="fa-solid fa-cash-register"></i> New Counter Bill</div>
+<form method="POST" id="billingForm">
+{% csrf_token %}
+<div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+
+    <!-- LEFT: Customer + Items -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Customer Info -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-user"></i> Customer Details</div>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Customer Name *</label>
+                        <input type="text" name="customer_name" class="form-control" placeholder="e.g. Walking Customer" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Customer Address</label>
+                        <input type="text" name="customer_address" class="form-control" placeholder="Address (Optional)">
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="POST" id="billingForm">
-                {% csrf_token %}
-                
-                <div class="form-group">
-                    <label for="id_customer_name" class="form-label">Customer Name *</label>
-                    <input type="text" id="id_customer_name" name="customer_name" class="form-control" value="{{ cust_name|default:'' }}" placeholder="e.g. Walking Customer" required>
-                </div>
 
-                <div class="form-group">
-                    <label for="id_customer_address" class="form-label">Customer Address</label>
-                    <textarea id="id_customer_address" name="customer_address" class="form-control" rows="2" placeholder="Address (Optional)">{{ cust_address|default:'' }}</textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="id_product" class="form-label">Select Product Item *</label>
-                    <select id="id_product" name="product" class="form-control" required>
-                        <option value="">-- Choose Product --</option>
-                        {% for product in products %}
-                            <option value="{{ product.id }}" data-price="{{ product.selling_price }}" data-stock="{{ product.stock_quantity }}" {% if selected_product_id == product.id %}selected{% endif %}>
-                                {{ product.name }} (In Stock: {{ product.stock_quantity }})
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="id_quantity" class="form-label">Quantity *</label>
-                        <input type="number" id="id_quantity" name="quantity" class="form-control" value="{{ quantity|default:1 }}" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="id_rate" class="form-label">Rate / Unit (₹) *</label>
-                        <input type="number" id="id_rate" name="rate" class="form-control" step="0.01" value="{{ rate|default:'0.00' }}" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="id_total" class="form-label">Total Amount (₹)</label>
-                        <input type="number" id="id_total" class="form-control" step="0.01" value="0.00" readonly style="background-color: var(--bg-app); font-weight: bold; color: var(--primary);">
-                    </div>
-                    <div class="form-group">
-                        <label for="id_amount_given" class="form-label">Amount Given (₹) *</label>
-                        <input type="number" id="id_amount_given" name="amount_given" class="form-control" step="0.01" value="{{ amount_given|default:'0.00' }}" required>
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 24px;">
-                    <label for="id_amount_to_be_given" class="form-label" id="changeLabel">Change to Return (₹)</label>
-                    <input type="number" id="id_amount_to_be_given" class="form-control" step="0.01" value="0.00" readonly style="background-color: var(--bg-app); font-weight: bold;">
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-full">
-                    <i class="fa-solid fa-receipt"></i> Print & Log Bill
+        <!-- Product Items Table -->
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="card-title"><i class="fa-solid fa-boxes-stacked"></i> Product Items</div>
+                <button type="button" id="addItemBtn" class="btn btn-secondary btn-sm" style="font-weight: 600; gap: 6px; display: flex; align-items: center;">
+                    <i class="fa-solid fa-plus"></i> Add Item
                 </button>
-            </form>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <div class="table-responsive">
+                    <table class="table" id="itemsTable" style="margin: 0;">
+                        <thead>
+                            <tr>
+                                <th style="width: 35%;">Product</th>
+                                <th style="width: 12%; text-align: center;">Qty</th>
+                                <th style="width: 18%; text-align: right;">Rate (₹)</th>
+                                <th style="width: 18%; text-align: right;">Subtotal (₹)</th>
+                                <th style="width: 8%; text-align: center;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            <!-- Rows added by JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: var(--bg-app);">
+                                <td colspan="3" style="text-align: right; font-weight: 700; font-size: 15px; padding: 14px 16px;">Grand Total</td>
+                                <td style="text-align: right; font-weight: 700; font-size: 16px; color: var(--primary); padding: 14px 16px;">
+                                    ₹<span id="grandTotalDisplay">0.00</span>
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT: Payment Panel -->
+    <div class="card" style="position: sticky; top: 80px;">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-indian-rupee-sign"></i> Payment Summary</div>
+        </div>
+        <div class="card-body" style="display: flex; flex-direction: column; gap: 16px;">
+
+            <div style="background: var(--bg-app); border-radius: var(--radius-sm); padding: 16px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-muted);">
+                    <span>Items</span><span id="summaryItems">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; color: var(--primary);">
+                    <span>Grand Total</span><span>₹<span id="summaryTotal">0.00</span></span>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label">Amount Given by Customer (₹) *</label>
+                <input type="number" id="amountGivenInput" name="amount_given" class="form-control"
+                       step="0.01" min="0" value="0.00" required
+                       style="font-size: 18px; font-weight: 700; text-align: right;">
+            </div>
+
+            <div id="changeBox" style="border-radius: var(--radius-sm); padding: 14px 16px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <span id="changeLabel" style="font-weight: 600; font-size: 13px;">Change to Return</span>
+                <span id="changeValue" style="font-weight: 700; font-size: 18px;">₹0.00</span>
+            </div>
+
+            <button type="submit" id="submitBillBtn" class="btn btn-primary btn-full" style="font-size: 15px; padding: 14px; font-weight: 700;">
+                <i class="fa-solid fa-receipt"></i> Generate Bill
+            </button>
         </div>
     </div>
 
 </div>
+</form>
+
+<!-- Hidden product data for JS -->
+<script id="productData" type="application/json">
+[{% for p in products %}{"id":"{{ p.id }}","name":"{{ p.name|escapejs }}","price":"{{ p.selling_price }}","stock":{{ p.stock_quantity }}}{% if not forloop.last %},{% endif %}{% endfor %}]
+</script>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const productSelect = document.getElementById('id_product');
-    const quantityInput = document.getElementById('id_quantity');
-    const rateInput = document.getElementById('id_rate');
-    const totalInput = document.getElementById('id_total');
-    const amountGivenInput = document.getElementById('id_amount_given');
-    const changeInput = document.getElementById('id_amount_to_be_given');
-    const changeLabel = document.getElementById('changeLabel');
-    const billingForm = document.getElementById('billingForm');
+(function() {
+    const products   = JSON.parse(document.getElementById('productData').textContent);
+    const itemsBody  = document.getElementById('itemsBody');
+    const addItemBtn = document.getElementById('addItemBtn');
+    const amountGivenInput = document.getElementById('amountGivenInput');
 
-    // 1. Auto-fill Rate when Product is selected
-    productSelect.addEventListener('change', () => {
-        const selectedOption = productSelect.options[productSelect.selectedIndex];
-        if (selectedOption && selectedOption.value) {
-            const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
-            rateInput.value = price.toFixed(2);
-        } else {
-            rateInput.value = "0.00";
-        }
-        calculateTotal();
-    });
+    let rowCount = 0;
 
-    // 2. Perform math triggers
-    quantityInput.addEventListener('input', calculateTotal);
-    rateInput.addEventListener('input', calculateTotal);
-    amountGivenInput.addEventListener('input', calculateChange);
-
-    function calculateTotal() {
-        const qty = parseInt(quantityInput.value || 0);
-        const rate = parseFloat(rateInput.value || 0);
-        const total = qty * rate;
-        totalInput.value = total.toFixed(2);
-        
-        // Auto-fill Amount Given if it's currently 0 or smaller than total
-        const currentGiven = parseFloat(amountGivenInput.value || 0);
-        if (currentGiven === 0 || currentGiven < total) {
-            amountGivenInput.value = total.toFixed(2);
-        }
-        calculateChange();
+    function buildOptions(selectedId) {
+        return products.map(p =>
+            `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}"
+             ${p.id == selectedId ? 'selected' : ''}>
+             ${p.name} (Stock: ${p.stock})
+             </option>`
+        ).join('');
     }
 
-    function calculateChange() {
-        const total = parseFloat(totalInput.value || 0);
-        const given = parseFloat(amountGivenInput.value || 0);
-        const change = given - total;
-        
-        changeInput.value = Math.abs(change).toFixed(2);
-        
-        if (change >= 0) {
-            changeLabel.textContent = "Change to Return (₹)";
-            changeInput.style.color = "var(--success-text)";
-            changeInput.style.backgroundColor = "var(--success-light)";
-        } else {
-            changeLabel.textContent = "Balance Outstanding (₹)";
-            changeInput.style.color = "var(--danger-text)";
-            changeInput.style.backgroundColor = "var(--danger-light)";
-        }
-    }
+    function addRow(pid, qty, rate) {
+        rowCount++;
+        const rid = 'row_' + rowCount;
+        const tr = document.createElement('tr');
+        tr.id = rid;
+        tr.innerHTML = `
+            <td>
+                <select name="product_id[]" class="form-control prod-select" required style="font-size:13px;">
+                    <option value="">-- Choose Product --</option>
+                    ${buildOptions(pid || '')}
+                </select>
+            </td>
+            <td style="text-align:center;">
+                <input type="number" name="quantity[]" class="form-control qty-input"
+                       value="${qty || 1}" min="1" required style="text-align:center; width:70px; margin:auto;">
+            </td>
+            <td style="text-align:right;">
+                <input type="number" name="rate[]" class="form-control rate-input"
+                       value="${rate ? parseFloat(rate).toFixed(2) : '0.00'}" step="0.01" min="0" required
+                       style="text-align:right; width:110px; margin-left:auto;">
+            </td>
+            <td style="text-align:right; font-weight:700; color:var(--primary); padding-right:16px;">
+                <span class="subtotal-display">₹0.00</span>
+            </td>
+            <td style="text-align:center;">
+                <button type="button" class="btn btn-sm remove-row-btn"
+                        style="color:var(--danger-text); background:var(--danger-light); border:none; padding:4px 8px; border-radius:6px;"
+                        title="Remove row">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>`;
+        itemsBody.appendChild(tr);
 
-    // 3. Frontend validation on form submit
-    billingForm.addEventListener('submit', (e) => {
-        const selectedOption = productSelect.options[productSelect.selectedIndex];
-        if (selectedOption && selectedOption.value) {
-            const stock = parseInt(selectedOption.getAttribute('data-stock') || 0);
-            const qty = parseInt(quantityInput.value || 0);
-            if (qty > stock) {
-                e.preventDefault();
-                alert(`Error: Cannot generate bill. Requested quantity (${qty}) exceeds available stock (${stock}) for this product.`);
+        const select   = tr.querySelector('.prod-select');
+        const qtyInput = tr.querySelector('.qty-input');
+        const rateInput = tr.querySelector('.rate-input');
+
+        // Auto-fill rate on product select
+        select.addEventListener('change', () => {
+            const opt = select.options[select.selectedIndex];
+            if (opt && opt.value) {
+                rateInput.value = parseFloat(opt.getAttribute('data-price') || 0).toFixed(2);
+            } else {
+                rateInput.value = '0.00';
             }
+            recalc();
+        });
+
+        qtyInput.addEventListener('input', recalc);
+        rateInput.addEventListener('input', recalc);
+
+        tr.querySelector('.remove-row-btn').addEventListener('click', () => {
+            tr.remove();
+            recalc();
+        });
+
+        // Trigger price fill if editing an existing selection
+        if (pid) {
+            const opt = select.options[select.selectedIndex];
+            if (opt && !rate) rateInput.value = parseFloat(opt.getAttribute('data-price') || 0).toFixed(2);
         }
+        recalc();
+    }
+
+    function recalc() {
+        let grand = 0;
+        let itemCount = 0;
+        itemsBody.querySelectorAll('tr').forEach(row => {
+            const qty  = parseFloat(row.querySelector('.qty-input')?.value || 0);
+            const rate = parseFloat(row.querySelector('.rate-input')?.value || 0);
+            const sub  = qty * rate;
+            const disp = row.querySelector('.subtotal-display');
+            if (disp) disp.textContent = '₹' + sub.toFixed(2);
+            grand += sub;
+            itemCount++;
+        });
+
+        document.getElementById('grandTotalDisplay').textContent = grand.toFixed(2);
+        document.getElementById('summaryTotal').textContent = grand.toFixed(2);
+        document.getElementById('summaryItems').textContent = itemCount;
+
+        // Auto-fill amount given if 0 or less than grand total
+        const given = parseFloat(amountGivenInput.value || 0);
+        if (given === 0 || given < grand) {
+            amountGivenInput.value = grand.toFixed(2);
+        }
+        updateChange();
+    }
+
+    function updateChange() {
+        const grand = parseFloat(document.getElementById('grandTotalDisplay').textContent || 0);
+        const given = parseFloat(amountGivenInput.value || 0);
+        const diff  = given - grand;
+        const box   = document.getElementById('changeBox');
+        const label = document.getElementById('changeLabel');
+        const val   = document.getElementById('changeValue');
+
+        val.textContent = '₹' + Math.abs(diff).toFixed(2);
+        if (diff >= 0) {
+            label.textContent = 'Change to Return';
+            box.style.background   = 'var(--success-light, #f0fdf4)';
+            box.style.borderColor  = 'rgba(16,185,129,0.3)';
+            val.style.color = 'var(--success-text, #065f46)';
+        } else {
+            label.textContent = 'Balance Outstanding';
+            box.style.background  = 'var(--danger-light, #fef2f2)';
+            box.style.borderColor = 'rgba(239,68,68,0.3)';
+            val.style.color = 'var(--danger-text, #991b1b)';
+        }
+    }
+
+    amountGivenInput.addEventListener('input', updateChange);
+    addItemBtn.addEventListener('click', () => addRow());
+
+    // Front-end validation before submit
+    document.getElementById('billingForm').addEventListener('submit', e => {
+        const rows = itemsBody.querySelectorAll('tr');
+        if (rows.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one product item.');
+            return;
+        }
+        let valid = true;
+        rows.forEach((row, i) => {
+            const sel   = row.querySelector('.prod-select');
+            const qty   = parseInt(row.querySelector('.qty-input')?.value || 0);
+            const stock = parseInt(sel?.options[sel.selectedIndex]?.getAttribute('data-stock') || 0);
+            const name  = sel?.options[sel.selectedIndex]?.text || '';
+            if (!sel?.value) {
+                alert(`Row ${i+1}: Please select a product.`);
+                valid = false;
+            } else if (qty > stock) {
+                alert(`"${name.split('(')[0].trim()}": Requested ${qty} but only ${stock} in stock.`);
+                valid = false;
+            }
+        });
+        if (!valid) e.preventDefault();
     });
 
-    // Initial calculation in case inputs preserve values on refresh
-    calculateTotal();
-});
+    // Start with one empty row
+    addRow();
+})();
 </script>
 {% endblock %}

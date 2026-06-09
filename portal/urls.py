@@ -17,4 +17,10 @@ urlpatterns = [
     path('billing/records/', views.billing_records_view, name='billing_records'),
     path('billing/clear-due/<int:pk>/', views.clear_due_view, name='clear_due'),
     path('billing/report/', views.revenue_report_view, name='revenue_report'),
+
+    # Download endpoints
+    path('billing/report/download/excel/', views.revenue_report_excel, name='revenue_report_excel'),
+    path('billing/report/download/pdf/',   views.revenue_report_pdf,   name='revenue_report_pdf'),
+    path('stock/report/download/excel/',   views.stock_report_excel,   name='stock_report_excel'),
+    path('stock/report/download/pdf/',     views.stock_report_pdf,     name='stock_report_pdf'),
 ]

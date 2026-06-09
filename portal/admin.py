@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, Bill
+from .models import Category, Product, Bill, BillItem
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -15,10 +15,15 @@ class ProductAdmin(admin.ModelAdmin):
     list_editable = ('purchase_price', 'selling_price', 'stock_quantity', 'min_stock_level')
 
 
+class BillItemInline(admin.TabularInline):
+    model = BillItem
+    extra = 0
+    readonly_fields = ('product', 'quantity', 'rate', 'total')
 
 
 @admin.register(Bill)
 class BillAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer_name', 'product', 'quantity', 'rate', 'total', 'created_at')
-    list_filter = ('created_at', 'product')
-    search_fields = ('customer_name', 'product__name')
+    list_display  = ('id', 'customer_name', 'grand_total', 'amount_given', 'amount_to_be_given', 'created_at')
+    list_filter   = ('created_at',)
+    search_fields = ('customer_name',)
+    inlines       = [BillItemInline]

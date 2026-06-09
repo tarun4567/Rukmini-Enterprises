@@ -28,80 +28,100 @@
     </div>
 </div>
 
-<!-- Daily Entries Log Card -->
-<div class="card">
-    <div class="card-body" style="padding: 0;">
-        <div class="table-responsive">
-            <table class="table" id="billingRecordsTable">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Bill ID</th>
-                        <th>Customer Name</th>
-                        <th>Address</th>
-                        <th>Product Item</th>
-                        <th style="text-align: right;">Rate x Qty</th>
-                        <th style="text-align: right;">Total Amount</th>
-                        <th style="text-align: right;">Paid / Change</th>
-                        <th style="text-align: right; width: 130px;">Status / Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bill in daily_bills %}
-                    <tr>
-                        <td><strong>{{ bill.created_at|date:"h:i A" }}</strong></td>
-                        <td><code>#{{ bill.id }}</code></td>
-                        <td><strong>{{ bill.customer_name }}</strong></td>
-                        <td><span style="color: var(--text-muted); font-size: 13px;">{{ bill.customer_address|default:"—" }}</span></td>
-                        <td>
-                            <div><strong>{{ bill.product.name|default:"Deleted Product" }}</strong></div>
-                            <div style="font-size: 11px; color: var(--text-muted);">SKU: {{ bill.product.sku|default:"—" }}</div>
-                        </td>
-                        <td style="text-align: right;">
-                            ₹{{ bill.rate|floatformat:2 }} x {{ bill.quantity }}
-                        </td>
-                        <td style="text-align: right;">
-                            <strong style="color: var(--primary); font-size: 15px;">₹{{ bill.total|floatformat:2 }}</strong>
-                        </td>
-                        <td style="text-align: right;">
-                            <div style="font-size: 13px;">Paid: ₹{{ bill.amount_given|floatformat:2 }}</div>
-                            <div style="font-size: 11px; font-weight: 600; {% if bill.amount_to_be_given >= 0 %}color: var(--success-text);{% else %}color: var(--danger-text);{% endif %}">
-                                {% if bill.amount_to_be_given >= 0 %}
-                                    Change: ₹{{ bill.abs_amount_to_be_given|floatformat:2 }}
-                                {% else %}
-                                    Due: ₹{{ bill.abs_amount_to_be_given|floatformat:2 }}
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td style="text-align: right;">
-                            {% if bill.amount_to_be_given < 0 %}
-                                <!-- Outstanding Due Clearance Form -->
-                                <form action="{% url 'clear_due' bill.id %}" method="POST" style="margin: 0; display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
-                                    {% csrf_token %}
-                                    <input type="number" name="clear_amount" step="0.01" min="0.01" max="{{ bill.abs_amount_to_be_given|stringformat:'.2f' }}" class="form-control btn-sm" placeholder="0.00" style="width: 80px; height: 32px; padding: 2px 6px; font-size: 12px;" required>
-                                    <button type="submit" class="btn btn-secondary btn-sm" style="background-color: var(--success-light); color: var(--success-text); border: 1px solid rgba(16,185,129,0.2); font-weight: 600; font-size: 11px; height: 32px; padding: 0 10px;" title="Submit Partial Payment">
-                                        Pay
-                                    </button>
-                                </form>
-                            {% else %}
-                                <!-- Settled Badge -->
-                                <span class="badge success" style="padding: 4px 8px; font-size: 11px;">
-                                    <i class="fa-solid fa-circle-check"></i> Fully Paid
-                                </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" style="text-align: center; padding: 64px; color: var(--text-muted);">
-                            <i class="fa-solid fa-receipt" style="font-size: 44px; margin-bottom: 12px; display: block; color: var(--text-muted);"></i>
-                            No transactions processed on this date.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Bills List -->
+{% for bill in daily_bills %}
+<div class="card" style="margin-bottom: 20px;" id="billingRecordsTable">
+    <!-- Bill Header -->
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <code style="font-size: 14px; font-weight: 700; color: var(--primary);">#{{ bill.id }}</code>
+            <div>
+                <div style="font-weight: 700; font-size: 15px;">{{ bill.customer_name }}</div>
+                {% if bill.customer_address %}
+                <div style="font-size: 12px; color: var(--text-muted);">{{ bill.customer_address }}</div>
+                {% endif %}
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted); background: var(--bg-app); padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
+                <i class="fa-solid fa-clock"></i> {{ bill.created_at|date:"h:i A" }}
+            </span>
+        </div>
+        <!-- Payment Status -->
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="text-align: right;">
+                <div style="font-size: 12px; color: var(--text-muted);">Grand Total</div>
+                <div style="font-weight: 700; font-size: 18px; color: var(--primary);">₹{{ bill.grand_total|floatformat:2 }}</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 12px; color: var(--text-muted);">Paid</div>
+                <div style="font-weight: 600; font-size: 14px;">₹{{ bill.amount_given|floatformat:2 }}</div>
+            </div>
+            <div style="text-align: right;">
+                {% if bill.amount_to_be_given >= 0 %}
+                <div style="font-size: 12px; color: var(--success-text);">Change</div>
+                <div style="font-weight: 700; font-size: 14px; color: var(--success-text);">₹{{ bill.abs_amount_to_be_given|floatformat:2 }}</div>
+                {% else %}
+                <div style="font-size: 12px; color: var(--danger-text);">Due</div>
+                <div style="font-weight: 700; font-size: 14px; color: var(--danger-text);">₹{{ bill.abs_amount_to_be_given|floatformat:2 }}</div>
+                {% endif %}
+            </div>
+            {% if bill.amount_to_be_given >= 0 %}
+            <span class="badge success" style="padding: 6px 12px; font-size: 12px;">
+                <i class="fa-solid fa-circle-check"></i> Fully Paid
+            </span>
+            {% else %}
+            <!-- Clear Due Form -->
+            <form action="{% url 'clear_due' bill.id %}" method="POST" style="margin: 0; display: flex; gap: 4px; align-items: center;">
+                {% csrf_token %}
+                <input type="number" name="clear_amount" step="0.01" min="0.01"
+                       max="{{ bill.abs_amount_to_be_given|stringformat:'.2f' }}"
+                       class="form-control btn-sm" placeholder="0.00"
+                       style="width: 90px; height: 34px; padding: 4px 8px; font-size: 13px;" required>
+                <button type="submit" class="btn btn-sm"
+                        style="background: var(--success-light); color: var(--success-text); border: 1px solid rgba(16,185,129,0.2); font-weight: 600; height: 34px; padding: 0 12px;">
+                    Pay
+                </button>
+            </form>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Line Items -->
+    <div class="card-body" style="padding: 0;">
+        <table class="table" style="margin: 0;">
+            <thead style="background: var(--bg-app);">
+                <tr>
+                    <th style="padding: 10px 16px; font-size: 12px;">#</th>
+                    <th style="padding: 10px 16px; font-size: 12px;">Product</th>
+                    <th style="padding: 10px 16px; font-size: 12px; text-align: right;">Rate</th>
+                    <th style="padding: 10px 16px; font-size: 12px; text-align: center;">Qty</th>
+                    <th style="padding: 10px 16px; font-size: 12px; text-align: right;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in bill.items.all %}
+                <tr>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ forloop.counter }}</td>
+                    <td>
+                        <div style="font-weight: 600;">{{ item.product.name|default:"Deleted Product" }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">{{ item.product.sku|default:"—" }}</div>
+                    </td>
+                    <td style="text-align: right; font-size: 13px;">₹{{ item.rate|floatformat:2 }}</td>
+                    <td style="text-align: center; font-weight: 600;">{{ item.quantity }}</td>
+                    <td style="text-align: right; font-weight: 700; color: var(--primary);">₹{{ item.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+{% empty %}
+<div class="card">
+    <div class="card-body" style="text-align: center; padding: 64px; color: var(--text-muted);">
+        <i class="fa-solid fa-receipt" style="font-size: 44px; margin-bottom: 12px; display: block;"></i>
+        No transactions processed on this date.
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

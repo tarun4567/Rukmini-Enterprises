@@ -81,15 +81,12 @@ class Product(models.Model):
 
 
 class Bill(models.Model):
-    customer_name = models.CharField(max_length=150, verbose_name="Customer Name")
+    customer_name    = models.CharField(max_length=150, verbose_name="Customer Name")
     customer_address = models.TextField(blank=True, null=True, verbose_name="Customer Address")
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
-    quantity = models.IntegerField(default=1)
-    rate = models.DecimalField(max_digits=10, decimal_places=2)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    amount_given = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Amount Given")
-    amount_to_be_given = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Amount to be Given")
-    created_at = models.DateTimeField(auto_now_add=True)
+    grand_total      = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    amount_given     = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Amount Given")
+    amount_to_be_given = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Amount to be Given")
+    created_at       = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Bill #{self.id} - {self.customer_name}"
@@ -97,4 +94,24 @@ class Bill(models.Model):
     @property
     def abs_amount_to_be_given(self):
         return abs(self.amount_to_be_given)
+
+    # ── Legacy compatibility properties (for views/templates that still reference these) ──
+    @property
+    def total(self):
+        return self.grand_total
+
+    @property
+    def items_list(self):
+        return self.items.select_related('product').all()
+
+
+class BillItem(models.Model):
+    bill     = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='items')
+    product  = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    quantity = models.IntegerField(default=1)
+    rate     = models.DecimalField(max_digits=10, decimal_places=2)
+    total    = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"Item: {self.product.name if self.product else 'Deleted'} x {self.quantity}"
 

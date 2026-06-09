@@ -10,6 +10,26 @@
         <h1>Revenue & Sales Reports</h1>
         <p>Review and audit total billing revenue, transaction counts, and outstanding dues.</p>
     </div>
+    <!-- Download Dropdown -->
+    <div style="position: relative; display: inline-block;">
+        <button id="revenueDownloadBtn" onclick="var m=document.getElementById('revenueDownloadMenu'); m.style.display = m.style.display==='block'?'none':'block';"
+            class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+            <i class="fa-solid fa-download"></i> Download Report
+            <i class="fa-solid fa-chevron-down" style="font-size: 11px;"></i>
+        </button>
+        <div id="revenueDownloadMenu" style="display:none; position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; overflow: hidden;">
+            <a href="{% url 'revenue_report_excel' %}?preset={{ preset }}&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+               style="display: flex; align-items: center; gap: 10px; padding: 11px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+               onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                <i class="fa-solid fa-file-excel" style="color: #16a34a; font-size: 15px;"></i> Download Excel
+            </a>
+            <a href="{% url 'revenue_report_pdf' %}?preset={{ preset }}&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+               style="display: flex; align-items: center; gap: 10px; padding: 11px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; border-top: 1px solid var(--border-color); transition: background 0.15s;"
+               onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 15px;"></i> Download PDF
+            </a>
+        </div>
+    </div>
 </div>
 
 <!-- Search & Filters -->
@@ -56,33 +76,7 @@
         </div>
     </div>
 
-    <!-- Total Sales / Bills Count -->
-    <div class="metric-card">
-        <div class="metric-info">
-            <h3>Total Transactions</h3>
-            <div class="metric-value">{{ total_sales }}</div>
-            <span class="metric-trend up" style="background-color: var(--success-light); color: var(--success-text);">
-                <i class="fa-solid fa-receipt"></i> Bills Generated
-            </span>
-        </div>
-        <div class="metric-icon-box purple">
-            <i class="fa-solid fa-file-invoice-dollar"></i>
-        </div>
-    </div>
 
-    <!-- Average Ticket Value -->
-    <div class="metric-card">
-        <div class="metric-info">
-            <h3>Avg Ticket Value</h3>
-            <div class="metric-value">₹{{ avg_order_value|floatformat:2 }}</div>
-            <span class="metric-trend up" style="background-color: rgba(245,158,11,0.1); color: rgb(245,158,11);">
-                <i class="fa-solid fa-calculator"></i> Ticket Size
-            </span>
-        </div>
-        <div class="metric-icon-box blue">
-            <i class="fa-solid fa-scale-balanced"></i>
-        </div>
-    </div>
 
     <!-- Outstanding Dues -->
     <div class="metric-card">
@@ -117,81 +111,19 @@
     </div>
 </div>
 
-<!-- Detailed Table Report -->
-<div class="card">
-    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div class="card-title">Transaction Log</div>
-        <div class="search-box" style="max-width: 280px; margin: 0;">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" class="form-control" placeholder="Search logs..." data-search-table="reportTable">
-        </div>
+{% comment %} Summary Metrics replacing Transaction Log {% endcomment %}
+<div class="summary-metrics" style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
+    <div class="summary-card" style="flex:1; min-width:200px; background: var(--bg-card); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <h3 style="margin:0; font-size: 1rem; color: var(--text-muted);">Total Sales</h3>
+        <div class="summary-value" style="font-size: 1.5rem; font-weight: 600; margin-top:8px;">{{ total_sales }}</div>
     </div>
-    <div class="card-body" style="padding: 0;">
-        <div class="table-responsive">
-            <table class="table" id="reportTable">
-                <thead>
-                    <tr>
-                        <th>Date & Time</th>
-                        <th>Bill ID</th>
-                        <th>Customer</th>
-                        <th>Address</th>
-                        <th>Product Item</th>
-                        <th style="text-align: right;">Rate x Qty</th>
-                        <th style="text-align: right;">Total Bill</th>
-                        <th style="text-align: right;">Paid / Change</th>
-                        <th style="text-align: right; width: 120px;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bill in bills %}
-                    <tr>
-                        <td><strong>{{ bill.created_at|date:"M d, Y h:i A" }}</strong></td>
-                        <td><code>#{{ bill.id }}</code></td>
-                        <td><strong>{{ bill.customer_name }}</strong></td>
-                        <td><span style="color: var(--text-muted); font-size: 12px;">{{ bill.customer_address|default:"—" }}</span></td>
-                        <td>
-                            <div><strong>{{ bill.product.name|default:"Deleted Product" }}</strong></div>
-                            <div style="font-size: 11px; color: var(--text-muted);">SKU: {{ bill.product.sku|default:"—" }}</div>
-                        </td>
-                        <td style="text-align: right;">
-                            ₹{{ bill.rate|floatformat:2 }} x {{ bill.quantity }}
-                        </td>
-                        <td style="text-align: right;">
-                            <strong style="color: var(--primary); font-size: 15px;">₹{{ bill.total|floatformat:2 }}</strong>
-                        </td>
-                        <td style="text-align: right;">
-                            <div style="font-size: 12px;">Paid: ₹{{ bill.amount_given|floatformat:2 }}</div>
-                            <div style="font-size: 11px; font-weight: 600; {% if bill.amount_to_be_given >= 0 %}color: var(--success-text);{% else %}color: var(--danger-text);{% endif %}">
-                                {% if bill.amount_to_be_given >= 0 %}
-                                    Change: ₹{{ bill.abs_amount_to_be_given|floatformat:2 }}
-                                {% else %}
-                                    Due: ₹{{ bill.abs_amount_to_be_given|floatformat:2 }}
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td style="text-align: right;">
-                            {% if bill.amount_to_be_given >= 0 %}
-                                <span class="badge success" style="padding: 4px 8px; font-size: 11px;">
-                                    <i class="fa-solid fa-circle-check"></i> Fully Paid
-                                </span>
-                            {% else %}
-                                <span class="badge danger" style="padding: 4px 8px; font-size: 11px;">
-                                    <i class="fa-solid fa-circle-exclamation"></i> Outstanding
-                                </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" style="text-align: center; padding: 64px; color: var(--text-muted);">
-                            <i class="fa-solid fa-receipt" style="font-size: 44px; margin-bottom: 12px; display: block; color: var(--text-muted);"></i>
-                            No sales records found matching the criteria.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="summary-card" style="flex:1; min-width:200px; background: var(--bg-card); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <h3 style="margin:0; font-size: 1rem; color: var(--text-muted);">Amount Collected</h3>
+        <div class="summary-value" style="font-size: 1.5rem; font-weight: 600; margin-top:8px;">₹{{ total_paid|floatformat:2 }}</div>
+    </div>
+    <div class="summary-card" style="flex:1; min-width:200px; background: var(--bg-card); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <h3 style="margin:0; font-size: 1rem; color: var(--text-muted);">Amount Balance</h3>
+        <div class="summary-value" style="font-size: 1.5rem; font-weight: 600; margin-top:8px;">₹{{ total_dues|floatformat:2 }}</div>
     </div>
 </div>
 {% endblock %}
