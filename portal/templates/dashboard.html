@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | Rukmini ERP{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>Welcome, {{ user.username }}</h1>
+        <p>Here is the business snapshot for Rukmini Enterprises today.</p>
+    </div>
+    <div>
+        <a href="{% url 'orders' %}" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> New Sales Order
+        </a>
+    </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="metrics-grid">
+    <!-- Total Revenue -->
+    <div class="metric-card">
+        <div class="metric-info">
+            <h3>Total Sales</h3>
+            <div class="metric-value">${{ total_revenue|floatformat:2 }}</div>
+            <span class="metric-trend up">
+                <i class="fa-solid fa-arrow-up"></i> Active ERP
+            </span>
+        </div>
+        <div class="metric-icon-box green">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+        </div>
+    </div>
+
+    <!-- Active Customers -->
+    <div class="metric-card">
+        <div class="metric-info">
+            <h3>Active Customers</h3>
+            <div class="metric-value">{{ total_customers }}</div>
+            <span class="metric-trend up">
+                <i class="fa-solid fa-users"></i> CRM Directory
+            </span>
+        </div>
+        <div class="metric-icon-box blue">
+            <i class="fa-solid fa-users"></i>
+        </div>
+    </div>
+
+    <!-- Total Products -->
+    <div class="metric-card">
+        <div class="metric-info">
+            <h3>Products Listed</h3>
+            <div class="metric-value">{{ total_products }}</div>
+            <span class="metric-trend up">
+                <i class="fa-solid fa-boxes-stacked"></i> Catalog Items
+            </span>
+        </div>
+        <div class="metric-icon-box purple">
+            <i class="fa-solid fa-box-open"></i>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert Count -->
+    <div class="metric-card">
+        <div class="metric-info">
+            <h3>Low Stock Alerts</h3>
+            <div class="metric-value">{{ low_stock_count }}</div>
+            {% if low_stock_count > 0 %}
+            <span class="metric-trend down">
+                <i class="fa-solid fa-triangle-exclamation"></i> Action Required
+            </span>
+            {% else %}
+            <span class="metric-trend up" style="background-color: var(--success-light); color: var(--success-text);">
+                <i class="fa-solid fa-check-double"></i> All Stocks Good
+            </span>
+            {% endif %}
+        </div>
+        <div class="metric-icon-box {% if low_stock_count > 0 %}amber{% else %}green{% endif %}">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="charts-grid">
+    <!-- Sales Revenue Trend -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Sales Revenue Trend (Last 6 Months)</div>
+            <i class="fa-solid fa-chart-line text-muted"></i>
+        </div>
+        <div class="card-body">
+            <div style="position: relative; height: 300px;">
+                <canvas id="salesTrendChart" data-labels='{{ sales_labels|safe }}' data-values='{{ sales_values|safe }}'></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Valuation Breakdown -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Stock Valuation by Category</div>
+            <i class="fa-solid fa-chart-pie text-muted"></i>
+        </div>
+        <div class="card-body">
+            <div style="position: relative; height: 300px;">
+                <canvas id="categoryStockChart" data-labels='{{ category_labels|safe }}' data-values='{{ category_values|safe }}'></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grid for Low Stock & Recent Orders -->
+<div class="charts-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 0;">
+    <!-- Low Stock Alert Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title" style="color: var(--danger-text);"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock Warning Table</div>
+            <span class="badge danger">{{ low_stock_count }} items</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>In Stock</th>
+                            <th>Min Level</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in low_stock_products %}
+                        <tr>
+                            <td><strong>{{ product.name }}</strong></td>
+                            <td><code>{{ product.sku }}</code></td>
+                            <td><span class="badge danger">{{ product.stock_quantity }}</span></td>
+                            <td>{{ product.min_stock_level }}</td>
+                            <td>
+                                <a href="{% url 'product_edit' product.id %}" class="btn btn-secondary btn-sm" title="Quick Restock">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                                <i class="fa-solid fa-face-smile" style="font-size: 24px; margin-bottom: 8px; display: block; color: var(--success);"></i>
+                                All products have healthy stock levels.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Recent Customer Orders</div>
+            <a href="{% url 'orders' %}" style="font-size: 13px; font-weight: 600; color: var(--primary);">View All Orders</a>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td><code>#{{ order.id }}</code></td>
+                            <td>
+                                <div><strong>{{ order.customer.name }}</strong></div>
+                                <div style="font-size: 11px; color: var(--text-muted);">{{ order.order_date|date:"M d, Y" }}</div>
+                            </td>
+                            <td><span class="badge {{ order.status|lower }}">{{ order.status }}</span></td>
+                            <td><strong>${{ order.total_price|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                                <i class="fa-solid fa-receipt" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                                No orders logged yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Initialize Charts -->
+<script src="{% static 'js/charts.js' %}"></script>
+{% endblock %}

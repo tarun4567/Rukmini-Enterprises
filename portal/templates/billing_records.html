@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Billing Records | Rukmini ERP{% endblock %}
+{% block header_title %}Billing Records{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>Counter Billing Records</h1>
+        <p>Review and audit all counter bills logged for the selected session date.</p>
+    </div>
+    <div style="font-size: 14px; font-weight: 600; color: var(--text-muted); background-color: var(--bg-card); padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        <i class="fa-solid fa-calendar-day"></i> Selected Date: <strong>{{ today|date:"M d, Y" }}</strong>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="filter-bar">
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" class="form-control" placeholder="Search by customer name..." data-search-table="billingRecordsTable">
+    </div>
+    <div class="filter-actions">
+        <form method="GET" style="display: flex; align-items: center; gap: 12px; margin: 0;">
+            <label for="date-search" style="font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Search Date:</label>
+            <input type="date" id="date-search" name="date" class="form-control" value="{{ today|date:'Y-m-d' }}" onchange="this.form.submit()" style="height: 38px; width: 170px; font-family: var(--font-body);">
+        </form>
+    </div>
+</div>
+
+<!-- Daily Entries Log Card -->
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table" id="billingRecordsTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Bill ID</th>
+                        <th>Customer Name</th>
+                        <th>Address</th>
+                        <th>Product Item</th>
+                        <th style="text-align: right;">Rate x Qty</th>
+                        <th style="text-align: right;">Total Amount</th>
+                        <th style="text-align: right;">Paid / Change</th>
+                        <th style="text-align: right; width: 130px;">Status / Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in daily_bills %}
+                    <tr>
+                        <td><strong>{{ bill.created_at|date:"h:i A" }}</strong></td>
+                        <td><code>#{{ bill.id }}</code></td>
+                        <td><strong>{{ bill.customer_name }}</strong></td>
+                        <td><span style="color: var(--text-muted); font-size: 13px;">{{ bill.customer_address|default:"—" }}</span></td>
+                        <td>
+                            <div><strong>{{ bill.product.name|default:"Deleted Product" }}</strong></div>
+                            <div style="font-size: 11px; color: var(--text-muted);">SKU: {{ bill.product.sku|default:"—" }}</div>
+                        </td>
+                        <td style="text-align: right;">
+                            ${{ bill.rate|floatformat:2 }} x {{ bill.quantity }}
+                        </td>
+                        <td style="text-align: right;">
+                            <strong style="color: var(--primary); font-size: 15px;">${{ bill.total|floatformat:2 }}</strong>
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="font-size: 13px;">Paid: ${{ bill.amount_given|floatformat:2 }}</div>
+                            <div style="font-size: 11px; font-weight: 600; {% if bill.amount_to_be_given >= 0 %}color: var(--success-text);{% else %}color: var(--danger-text);{% endif %}">
+                                {% if bill.amount_to_be_given >= 0 %}
+                                    Change: ${{ bill.abs_amount_to_be_given|floatformat:2 }}
+                                {% else %}
+                                    Due: ${{ bill.abs_amount_to_be_given|floatformat:2 }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            {% if bill.amount_to_be_given < 0 %}
+                                <!-- Outstanding Due Clearance Form -->
+                                <form action="{% url 'clear_due' bill.id %}" method="POST" style="margin: 0; display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
+                                    {% csrf_token %}
+                                    <input type="number" name="clear_amount" step="0.01" min="0.01" max="{{ bill.abs_amount_to_be_given|stringformat:'.2f' }}" class="form-control btn-sm" placeholder="0.00" style="width: 80px; height: 32px; padding: 2px 6px; font-size: 12px;" required>
+                                    <button type="submit" class="btn btn-secondary btn-sm" style="background-color: var(--success-light); color: var(--success-text); border: 1px solid rgba(16,185,129,0.2); font-weight: 600; font-size: 11px; height: 32px; padding: 0 10px;" title="Submit Partial Payment">
+                                        Pay
+                                    </button>
+                                </form>
+                            {% else %}
+                                <!-- Settled Badge -->
+                                <span class="badge success" style="padding: 4px 8px; font-size: 11px;">
+                                    <i class="fa-solid fa-circle-check"></i> Fully Paid
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 64px; color: var(--text-muted);">
+                            <i class="fa-solid fa-receipt" style="font-size: 44px; margin-bottom: 12px; display: block; color: var(--text-muted);"></i>
+                            No transactions processed on this date.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Rukmini Enterprises Portal{% endblock %}</title>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>Rukmini ERP</h2>
+        </div>
+        <ul class="sidebar-menu">
+            {% if user.is_staff or user.is_superuser %}
+            <li class="sidebar-menu-item">
+                <a href="{% url 'dashboard' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'stock_add' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock_add' %}active{% endif %}">
+                    <i class="fa-solid fa-circle-plus"></i>
+                    <span>Stock</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'stock1' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock1' or request.resolver_match.url_name == 'stock_edit' %}active{% endif %}">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Stock 1</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'customers' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'customers' %}active{% endif %}">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Customers</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'orders' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'orders' %}active{% endif %}">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Orders</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="sidebar-menu-item">
+                <a href="{% url 'billing' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing' %}active{% endif %}">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>New Counter Bill</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'billing_records' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing_records' %}active{% endif %}">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>Today's Records</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'stocks' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stocks' %}active{% endif %}">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Stock Levels</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-user-avatar">
+                    {{ user.username|slice:":2"|upper }}
+                </div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name">{{ user.username }}</div>
+                    <div class="sidebar-user-role">{% if user.is_staff or user.is_superuser %}Administrator{% else %}Standard User{% endif %}</div>
+                </div>
+                <a href="{% url 'logout' %}" class="sidebar-logout" title="Log Out">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Layout Wrapper -->
+    <div class="layout-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="sidebar-toggle">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="header-title">{% block header_title %}Overview{% endblock %}</div>
+            </div>
+            <div class="header-actions">
+                <div class="header-btn" title="System Status: Online">
+                    <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
+                </div>
+                <div class="header-btn" title="View Site Admin">
+                    <a href="{% url 'admin:index' %}" target="_blank">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Messages Banner -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert-banner {{ message.tags }}">
+                        <span>{{ message }}</span>
+                        <i class="fa-solid fa-times" style="cursor: pointer;" onclick="this.parentElement.remove()"></i>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+        <!-- Unauthenticated Content (Login) -->
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    <!-- Custom Script -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Stock Item | Rukmini ERP{% else %}Add Stock Item | Rukmini ERP{% endif %}{% endblock %}
+{% block header_title %}Stock Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>{% if is_edit %}Edit Stock Item: {{ form.instance.name }}{% else %}Add New Stock Item{% endif %}</h1>
+        <p>Log a new product batch with description, quantity, price, and entry records.</p>
+    </div>
+    <div>
+        <a href="{% url 'stock1' %}" class="btn btn-outline">
+            <i class="fa-solid fa-arrow-left"></i> Back to Stock 1
+        </a>
+    </div>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <div class="card-title">Stock Detail Entry Form</div>
+    </div>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_category" class="form-label">Category *</label>
+                <select id="id_category" name="category" class="form-control" required>
+                    <option value="">-- Select Category --</option>
+                    {% for category in form.fields.category.queryset %}
+                        <option value="{{ category.id }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" or form.instance.category.id == category.id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if form.category.errors %}
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.category.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_company_name" class="form-label">Company Name *</label>
+                    <input type="text" id="id_company_name" name="company_name" class="form-control" value="{{ form.company_name.value|default:'' }}" required placeholder="e.g. Rukmini Metal Corp">
+                    {% if form.company_name.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.company_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_name" class="form-label">Product Name *</label>
+                    <input type="text" id="id_name" name="name" class="form-control" value="{{ form.name.value|default:'' }}" required placeholder="e.g. TMT Steel Bar 12mm">
+                    {% if form.name.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_description" class="form-label">Description *</label>
+                <textarea id="id_description" name="description" class="form-control" rows="3" required placeholder="Enter product detailed specifications, size, grades, etc.">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.description.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_stock_quantity" class="form-label">Qty *</label>
+                    <input type="number" id="id_stock_quantity" name="stock_quantity" class="form-control" value="{{ form.stock_quantity.value|default:'' }}" required placeholder="e.g. 50">
+                    {% if form.stock_quantity.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.stock_quantity.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_selling_price" class="form-label">Amt *</label>
+                    <input type="number" id="id_selling_price" name="selling_price" class="form-control" step="0.01" value="{{ form.selling_price.value|default:'' }}" required placeholder="e.g. 85.00">
+                    {% if form.selling_price.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.selling_price.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_stock_entered" class="form-label">Stock Entered *</label>
+                <input type="date" id="id_stock_entered" name="stock_entered" class="form-control" value="{{ form.stock_entered.value|default:'' }}" required>
+                {% if form.stock_entered.errors %}
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.stock_entered.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_photo" class="form-label">Photo (Optional)</label>
+                <input type="file" id="id_photo" name="photo" class="form-control" style="padding-top: 6px;">
+                {% if form.instance.photo %}
+                    <div style="font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                        <span>Current Photo:</span>
+                        <a href="{{ form.instance.photo.url }}" target="_blank" style="color: var(--primary); font-weight: 600;">{{ form.instance.photo.name }}</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="{% url 'stock_add' %}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if is_edit %}Update Item{% else %}Add Item{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stock List Below Form -->
+<div style="margin-top: 48px;">
+    <div class="page-header" style="margin-bottom: 16px;">
+        <div class="page-title-group">
+            <h2>Recently Added Stock</h2>
+            <p>List of all items registered in the database catalog.</p>
+        </div>
+        <!-- Search bar -->
+        <div class="search-box" style="max-width: 280px;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" class="form-control" placeholder="Search stock list..." data-search-table="stockTableAdd">
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+                <table class="table" id="stockTableAdd">
+                    <thead>
+                        <tr>
+                            <th>Product Details</th>
+                            <th>Company Name</th>
+                            <th>Stock Entered</th>
+                            <th>Amt</th>
+                            <th>Qty</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    {% if product.photo %}
+                                        <img src="{{ product.photo.url }}" alt="{{ product.name }}" style="width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color);">
+                                    {% elif product.image %}
+                                        <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color);">
+                                    {% else %}
+                                        <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid var(--border-color);">
+                                            <i class="fa-solid fa-image"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div style="font-weight: 700; color: var(--text-main);">{{ product.name }}</div>
+                                        <div style="font-size: 11px; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            {{ product.description|default:"No specifications." }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ product.company_name|default:"General" }}</td>
+                            <td><span style="font-size: 12px; color: var(--text-muted);">{{ product.stock_entered|default:"Not Logged" }}</span></td>
+                            <td><strong>${{ product.selling_price }}</strong></td>
+                            <td><strong>{{ product.initial_quantity }}</strong></td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; gap: 8px;">
+                                    <a href="{% url 'stock_edit' product.id %}" class="btn btn-outline btn-sm" style="height: 30px; padding: 0 10px;" title="Edit Stock Item">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <form action="{% url 'stock_delete' product.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete this stock item?');" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline btn-sm btn-danger" style="background: none; border-color: rgba(239,68,68,0.2); height: 30px; padding: 0 10px;" title="Delete Stock Item">
+                                            <i class="fa-solid fa-trash-can" style="color: var(--danger);"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                                No stock records available.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

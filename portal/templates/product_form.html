@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit Product | Rukmini ERP{% else %}Add Product | Rukmini ERP{% endif %}{% endblock %}
+{% block header_title %}Catalog Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>{% if form.instance.pk %}Edit Product: {{ form.instance.name }}{% else %}Add New Product{% endif %}</h1>
+        <p>Define specifications, cost structures, and quantities for this catalog item.</p>
+    </div>
+    <div>
+        <a href="{% url 'inventory' %}" class="btn btn-outline">
+            <i class="fa-solid fa-arrow-left"></i> Back to Catalog
+        </a>
+    </div>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <div class="card-title">Product Details Form</div>
+    </div>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_name" class="form-label">Product Name *</label>
+                    <input type="text" id="id_name" name="name" class="form-control" value="{{ form.name.value|default:'' }}" required placeholder="e.g. Copper Wire Reel">
+                    {% if form.name.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_sku" class="form-label">SKU (Unique Part Number) *</label>
+                    <input type="text" id="id_sku" name="sku" class="form-control" value="{{ form.sku.value|default:'' }}" required placeholder="e.g. COP-WIR-001">
+                    {% if form.sku.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.sku.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_category" class="form-label">Category *</label>
+                    <select id="id_category" name="category" class="form-control" required>
+                        <option value="">-- Select Category --</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" or form.instance.category.id == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.category.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.category.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_image" class="form-label">Product Image</label>
+                    <input type="file" id="id_image" name="image" class="form-control" style="padding-top: 6px;">
+                    {% if form.instance.image %}
+                        <div style="font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                            <span>Current Image:</span>
+                            <a href="{{ form.instance.image.url }}" target="_blank" style="color: var(--primary); font-weight: 600;">{{ form.instance.image.name }}</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_description" class="form-label">Description / Specifications</label>
+                <textarea id="id_description" name="description" class="form-control" rows="3" placeholder="Enter product detailed details, material specifications, grades, sizes, etc.">{{ form.description.value|default:'' }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_purchase_price" class="form-label">Purchase Price / Cost ($) *</label>
+                    <input type="number" id="id_purchase_price" name="purchase_price" class="form-control" step="0.01" value="{{ form.purchase_price.value|default:'' }}" required placeholder="0.00">
+                    {% if form.purchase_price.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.purchase_price.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_selling_price" class="form-label">Selling Price / Revenue ($) *</label>
+                    <input type="number" id="id_selling_price" name="selling_price" class="form-control" step="0.01" value="{{ form.selling_price.value|default:'' }}" required placeholder="0.00">
+                    {% if form.selling_price.errors %}
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.selling_price.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_stock_quantity" class="form-label">Initial Stock Quantity *</label>
+                    <input type="number" id="id_stock_quantity" name="stock_quantity" class="form-control" value="{{ form.stock_quantity.value|default:'0' }}" required placeholder="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_min_stock_level" class="form-label">Minimum Stock Alert Level *</label>
+                    <input type="number" id="id_min_stock_level" name="min_stock_level" class="form-control" value="{{ form.min_stock_level.value|default:'5' }}" required placeholder="5">
+                </div>
+            </div>
+
+            <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="{% url 'inventory' %}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if form.instance.pk %}Update Product{% else %}Create Product{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

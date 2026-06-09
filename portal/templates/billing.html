@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Day Billing | Rukmini ERP{% endblock %}
+{% block header_title %}Billing Counter{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>Day Billing Counter</h1>
+        <p>Record counter sales, compute totals, track payments, and verify cash register handovers.</p>
+    </div>
+    <div style="font-size: 14px; font-weight: 600; color: var(--text-muted); background-color: var(--bg-card); padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        <i class="fa-solid fa-calendar-day"></i> Session Date: <strong>{{ today|date:"M d, Y" }}</strong>
+    </div>
+</div>
+
+<div style="max-width: 600px; margin: 0 auto;">
+    
+    <!-- Billing Input Form -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-cash-register"></i> New Counter Bill</div>
+        </div>
+        <div class="card-body">
+            <form method="POST" id="billingForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_customer_name" class="form-label">Customer Name *</label>
+                    <input type="text" id="id_customer_name" name="customer_name" class="form-control" placeholder="e.g. Walking Customer" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_customer_address" class="form-label">Customer Address</label>
+                    <textarea id="id_customer_address" name="customer_address" class="form-control" rows="2" placeholder="Address (Optional)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_product" class="form-label">Select Product Item *</label>
+                    <select id="id_product" name="product" class="form-control" required>
+                        <option value="">-- Choose Product --</option>
+                        {% for product in products %}
+                            <option value="{{ product.id }}" data-price="{{ product.selling_price }}" data-stock="{{ product.stock_quantity }}">
+                                {{ product.name }} (In Stock: {{ product.stock_quantity }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_quantity" class="form-label">Quantity *</label>
+                        <input type="number" id="id_quantity" name="quantity" class="form-control" value="1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_rate" class="form-label">Rate / Unit ($) *</label>
+                        <input type="number" id="id_rate" name="rate" class="form-control" step="0.01" value="0.00" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_total" class="form-label">Total Amount ($)</label>
+                        <input type="number" id="id_total" class="form-control" step="0.01" value="0.00" readonly style="background-color: var(--bg-app); font-weight: bold; color: var(--primary);">
+                    </div>
+                    <div class="form-group">
+                        <label for="id_amount_given" class="form-label">Amount Given ($) *</label>
+                        <input type="number" id="id_amount_given" name="amount_given" class="form-control" step="0.01" value="0.00" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="id_amount_to_be_given" class="form-label" id="changeLabel">Change to Return ($)</label>
+                    <input type="number" id="id_amount_to_be_given" class="form-control" step="0.01" value="0.00" readonly style="background-color: var(--bg-app); font-weight: bold;">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fa-solid fa-receipt"></i> Print & Log Bill
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const productSelect = document.getElementById('id_product');
+    const quantityInput = document.getElementById('id_quantity');
+    const rateInput = document.getElementById('id_rate');
+    const totalInput = document.getElementById('id_total');
+    const amountGivenInput = document.getElementById('id_amount_given');
+    const changeInput = document.getElementById('id_amount_to_be_given');
+    const changeLabel = document.getElementById('changeLabel');
+    const billingForm = document.getElementById('billingForm');
+
+    // 1. Auto-fill Rate when Product is selected
+    productSelect.addEventListener('change', () => {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+            rateInput.value = price.toFixed(2);
+        } else {
+            rateInput.value = "0.00";
+        }
+        calculateTotal();
+    });
+
+    // 2. Perform math triggers
+    quantityInput.addEventListener('input', calculateTotal);
+    rateInput.addEventListener('input', calculateTotal);
+    amountGivenInput.addEventListener('input', calculateChange);
+
+    function calculateTotal() {
+        const qty = parseInt(quantityInput.value || 0);
+        const rate = parseFloat(rateInput.value || 0);
+        const total = qty * rate;
+        totalInput.value = total.toFixed(2);
+        
+        // Auto-fill Amount Given if it's currently 0 or smaller than total
+        const currentGiven = parseFloat(amountGivenInput.value || 0);
+        if (currentGiven === 0 || currentGiven < total) {
+            amountGivenInput.value = total.toFixed(2);
+        }
+        calculateChange();
+    }
+
+    function calculateChange() {
+        const total = parseFloat(totalInput.value || 0);
+        const given = parseFloat(amountGivenInput.value || 0);
+        const change = given - total;
+        
+        changeInput.value = Math.abs(change).toFixed(2);
+        
+        if (change >= 0) {
+            changeLabel.textContent = "Change to Return ($)";
+            changeInput.style.color = "var(--success-text)";
+            changeInput.style.backgroundColor = "var(--success-light)";
+        } else {
+            changeLabel.textContent = "Balance Outstanding ($)";
+            changeInput.style.color = "var(--danger-text)";
+            changeInput.style.backgroundColor = "var(--danger-light)";
+        }
+    }
+
+    // Initial calculation in case inputs preserve values on refresh
+    calculateTotal();
+});
+</script>
+{% endblock %}

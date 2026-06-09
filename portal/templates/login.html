@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | Rukmini Enterprises ERP{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Rukmini ERP</h1>
+            <p>Welcome back! Please enter your details.</p>
+        </div>
+
+        {% if form.errors or error_message %}
+        <div class="alert-banner danger" style="margin-bottom: 20px;">
+            <span>Invalid username or password. Please try again.</span>
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top: 10px;">
+                Sign In <i class="fa-solid fa-right-to-bracket"></i>
+            </button>
+        </form>
+        
+        <div style="margin-top: 24px; text-align: center; font-size: 13px; color: var(--text-muted);">
+            Rukmini Enterprises Internal Portal System
+        </div>
+    </div>
+</div>
+{% endblock %}
