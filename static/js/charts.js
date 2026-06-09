@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Sales Revenue ($)',
+                    label: 'Sales Revenue (₹)',
                     data: data,
                     borderColor: '#2563eb',
                     backgroundColor: 'rgba(37, 99, 235, 0.05)',
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fontFamily: 'Plus Jakarta Sans',
                         callbacks: {
                             label: function(context) {
-                                return ' Sales: $' + context.raw.toLocaleString();
+                                return ' Sales: ₹' + context.raw.toLocaleString();
                             }
                         }
                     }
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             },
                             color: '#64748b',
                             callback: function(value) {
-                                return '$' + value.toLocaleString();
+                                return '₹' + value.toLocaleString();
                             }
                         }
                     }
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fontFamily: 'Plus Jakarta Sans',
                         callbacks: {
                             label: function(context) {
-                                return ' Value: $' + context.raw.toLocaleString();
+                                return ' Value: ₹' + context.raw.toLocaleString();
                             }
                         }
                     }

@@ -61,7 +61,7 @@
                             <span class="badge {{ order.status|lower }}">{{ order.status }}</span>
                         </td>
                         <td>
-                            <strong style="font-size: 15px; color: var(--text-main);">${{ order.total_price|floatformat:2 }}</strong>
+                            <strong style="font-size: 15px; color: var(--text-main);">₹{{ order.total_price|floatformat:2 }}</strong>
                         </td>
                         <td style="text-align: right;">
                             <div style="display: inline-flex; gap: 8px;">
@@ -121,7 +121,7 @@
                     <select id="order_product" name="product" class="form-control" required>
                         <option value="">-- Choose Product --</option>
                         {% for product in products %}
-                            <option value="{{ product.id }}">{{ product.name }} (In Stock: {{ product.stock_quantity }}, Price: ${{ product.selling_price }})</option>
+                            <option value="{{ product.id }}">{{ product.name }} (In Stock: {{ product.stock_quantity }}, Price: ₹{{ product.selling_price }})</option>
                         {% endfor %}
                     </select>
                 </div>

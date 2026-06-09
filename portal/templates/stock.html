@@ -165,7 +165,7 @@
                             </td>
                             <td>{{ product.company_name|default:"General" }}</td>
                             <td><span style="font-size: 12px; color: var(--text-muted);">{{ product.stock_entered|default:"Not Logged" }}</span></td>
-                            <td><strong>${{ product.selling_price }}</strong></td>
+                            <td><strong>₹{{ product.selling_price }}</strong></td>
                             <td>{{ product.initial_quantity }}</td>
                             <td><strong>{{ product.stock_quantity }}</strong></td>
                             <td style="text-align: right;">

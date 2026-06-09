@@ -140,7 +140,7 @@ def billing_view(request):
             amount_to_be_given=amount_to_be_given
         )
         
-        messages.success(request, f"Bill #{bill.id} for {cust_name} created successfully! Change to return: ${amount_to_be_given:.2f}")
+        messages.success(request, f"Bill #{bill.id} for {cust_name} created successfully! Change to return: ₹{amount_to_be_given:.2f}")
         return redirect('billing_records')
 
     context = {
@@ -190,9 +190,9 @@ def clear_due_view(request, pk):
                     bill.save()
                     
                     if bill.amount_to_be_given >= 0:
-                        messages.success(request, f"Payment of ${clear_amount:.2f} received. Bill #{bill.id} is now fully cleared!")
+                        messages.success(request, f"Payment of ₹{clear_amount:.2f} received. Bill #{bill.id} is now fully cleared!")
                     else:
-                        messages.success(request, f"Payment of ${clear_amount:.2f} received for Bill #{bill.id}. Remaining due: ${abs(bill.amount_to_be_given):.2f}")
+                        messages.success(request, f"Payment of ₹{clear_amount:.2f} received for Bill #{bill.id}. Remaining due: ₹{abs(bill.amount_to_be_given):.2f}")
                 else:
                     messages.error(request, "Payment amount must be greater than zero.")
             except ValueError:

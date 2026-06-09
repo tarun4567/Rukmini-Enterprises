@@ -23,7 +23,7 @@
     <div class="metric-card">
         <div class="metric-info">
             <h3>Total Sales</h3>
-            <div class="metric-value">${{ total_revenue|floatformat:2 }}</div>
+            <div class="metric-value">₹{{ total_revenue|floatformat:2 }}</div>
             <span class="metric-trend up">
                 <i class="fa-solid fa-arrow-up"></i> Active ERP
             </span>
@@ -139,7 +139,7 @@
                             <td><span class="badge danger">{{ product.stock_quantity }}</span></td>
                             <td>{{ product.min_stock_level }}</td>
                             <td>
-                                <a href="{% url 'product_edit' product.id %}" class="btn btn-secondary btn-sm" title="Quick Restock">
+                                <a href="{% url 'stock_edit' product.id %}" class="btn btn-secondary btn-sm" title="Quick Restock">
                                     <i class="fa-solid fa-pen-to-square"></i> Edit
                                 </a>
                             </td>
@@ -184,7 +184,7 @@
                                 <div style="font-size: 11px; color: var(--text-muted);">{{ order.order_date|date:"M d, Y" }}</div>
                             </td>
                             <td><span class="badge {{ order.status|lower }}">{{ order.status }}</span></td>
-                            <td><strong>${{ order.total_price|floatformat:2 }}</strong></td>
+                            <td><strong>₹{{ order.total_price|floatformat:2 }}</strong></td>
                         </tr>
                         {% empty %}
                         <tr>

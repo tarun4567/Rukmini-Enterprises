@@ -53,24 +53,24 @@
                         <input type="number" id="id_quantity" name="quantity" class="form-control" value="{{ quantity|default:1 }}" min="1" required>
                     </div>
                     <div class="form-group">
-                        <label for="id_rate" class="form-label">Rate / Unit ($) *</label>
+                        <label for="id_rate" class="form-label">Rate / Unit (₹) *</label>
                         <input type="number" id="id_rate" name="rate" class="form-control" step="0.01" value="{{ rate|default:'0.00' }}" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="id_total" class="form-label">Total Amount ($)</label>
+                        <label for="id_total" class="form-label">Total Amount (₹)</label>
                         <input type="number" id="id_total" class="form-control" step="0.01" value="0.00" readonly style="background-color: var(--bg-app); font-weight: bold; color: var(--primary);">
                     </div>
                     <div class="form-group">
-                        <label for="id_amount_given" class="form-label">Amount Given ($) *</label>
+                        <label for="id_amount_given" class="form-label">Amount Given (₹) *</label>
                         <input type="number" id="id_amount_given" name="amount_given" class="form-control" step="0.01" value="{{ amount_given|default:'0.00' }}" required>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 24px;">
-                    <label for="id_amount_to_be_given" class="form-label" id="changeLabel">Change to Return ($)</label>
+                    <label for="id_amount_to_be_given" class="form-label" id="changeLabel">Change to Return (₹)</label>
                     <input type="number" id="id_amount_to_be_given" class="form-control" step="0.01" value="0.00" readonly style="background-color: var(--bg-app); font-weight: bold;">
                 </div>
 
@@ -135,11 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
         changeInput.value = Math.abs(change).toFixed(2);
         
         if (change >= 0) {
-            changeLabel.textContent = "Change to Return ($)";
+            changeLabel.textContent = "Change to Return (₹)";
             changeInput.style.color = "var(--success-text)";
             changeInput.style.backgroundColor = "var(--success-light)";
         } else {
-            changeLabel.textContent = "Balance Outstanding ($)";
+            changeLabel.textContent = "Balance Outstanding (₹)";
             changeInput.style.color = "var(--danger-text)";
             changeInput.style.backgroundColor = "var(--danger-light)";
         }
