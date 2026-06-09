@@ -29,13 +29,13 @@
                 </a>
             </li>
             <li class="sidebar-menu-item">
-                <a href="{% url 'stock_add' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock_add' %}active{% endif %}">
+                <a href="{% url 'stock_add' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock_add' or request.resolver_match.url_name == 'stock_edit' %}active{% endif %}">
                     <i class="fa-solid fa-circle-plus"></i>
                     <span>Stock</span>
                 </a>
             </li>
             <li class="sidebar-menu-item">
-                <a href="{% url 'stock1' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock1' or request.resolver_match.url_name == 'stock_edit' %}active{% endif %}">
+                <a href="{% url 'stock1' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock1' %}active{% endif %}">
                     <i class="fa-solid fa-boxes-stacked"></i>
                     <span>Stock 1</span>
                 </a>
