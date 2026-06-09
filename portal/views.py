@@ -223,23 +223,12 @@ def dashboard_view(request):
     current_year = timezone.now().year
     
     # Collect available years from DB
-    raw_years = sorted(list(set(
+    raw_years = (
         [current_year] + 
-        list(Order.objects.dates('order_date', 'year')) + 
-        list(Bill.objects.dates('created_at', 'year'))
-    )), reverse=True)
-    
-    available_years = []
-    for y in raw_years:
-        if hasattr(y, 'year'):
-            available_years.append(y.year)
-        else:
-            try:
-                available_years.append(int(y))
-            except (ValueError, TypeError):
-                pass
-                
-    available_years = sorted(list(set(available_years)), reverse=True)
+        [y.year for y in Order.objects.dates('order_date', 'year') if hasattr(y, 'year')] + 
+        [y.year for y in Bill.objects.dates('created_at', 'year') if hasattr(y, 'year')]
+    )
+    available_years = sorted(list(set(raw_years)), reverse=True)
     if len(available_years) < 2:
         available_years = [current_year, current_year - 1]
 
