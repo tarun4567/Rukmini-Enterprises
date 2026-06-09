@@ -40,18 +40,6 @@
                     <span>Stock 1</span>
                 </a>
             </li>
-            <li class="sidebar-menu-item">
-                <a href="{% url 'customers' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'customers' %}active{% endif %}">
-                    <i class="fa-solid fa-users"></i>
-                    <span>Customers</span>
-                </a>
-            </li>
-            <li class="sidebar-menu-item">
-                <a href="{% url 'orders' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'orders' %}active{% endif %}">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Orders</span>
-                </a>
-            </li>
             {% else %}
             <li class="sidebar-menu-item">
                 <a href="{% url 'billing' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing' %}active{% endif %}">

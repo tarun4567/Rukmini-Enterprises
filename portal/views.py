@@ -9,7 +9,7 @@ from functools import wraps
 import datetime
 import json
 
-from .models import Category, Product, Customer, Order, OrderItem, Bill
+from .models import Category, Product, Bill
 from .forms import StockForm
 
 # 1. Custom Role-Based Decorators
@@ -212,12 +212,8 @@ def dashboard_view(request):
     total_products = Product.objects.count()
     low_stock_products = Product.objects.filter(stock_quantity__lte=F('min_stock_level'))
     low_stock_count = low_stock_products.count()
-    total_customers = Customer.objects.count()
     
-    revenue_orders = Order.objects.filter(status__in=['Paid', 'Shipped'])
-    orders_rev = sum(order.total_price for order in revenue_orders)
-    bills_rev = float(Bill.objects.aggregate(total=Sum('total'))['total'] or 0.00)
-    total_revenue = float(orders_rev) + bills_rev
+    total_revenue = float(Bill.objects.aggregate(total=Sum('total'))['total'] or 0.00)
     
     # Year & Month dynamic filters
     current_year = timezone.now().year
@@ -225,7 +221,6 @@ def dashboard_view(request):
     # Collect available years from DB
     raw_years = (
         [current_year] + 
-        [y.year for y in Order.objects.dates('order_date', 'year') if hasattr(y, 'year')] + 
         [y.year for y in Bill.objects.dates('created_at', 'year') if hasattr(y, 'year')]
     )
     available_years = sorted(list(set(raw_years)), reverse=True)
@@ -256,20 +251,11 @@ def dashboard_view(request):
         # Monthly trend for the selected year
         sales_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         for month in range(1, 13):
-            month_orders = Order.objects.filter(
-                status__in=['Paid', 'Shipped'],
-                order_date__year=selected_year,
-                order_date__month=month
-            )
-            month_order_total = sum(order.total_price for order in month_orders)
-            
             month_bills = Bill.objects.filter(
                 created_at__year=selected_year,
                 created_at__month=month
             )
-            month_bill_total = sum(bill.total for bill in month_bills)
-            
-            month_total = float(month_order_total) + float(month_bill_total)
+            month_total = float(month_bills.aggregate(total=Sum('total'))['total'] or 0.00)
             sales_values.append(month_total)
     else:
         try:
@@ -279,22 +265,12 @@ def dashboard_view(request):
                 days_in_month = calendar.monthrange(selected_year, m_int)[1]
                 sales_labels = [str(d) for d in range(1, days_in_month + 1)]
                 for day in range(1, days_in_month + 1):
-                    day_orders = Order.objects.filter(
-                        status__in=['Paid', 'Shipped'],
-                        order_date__year=selected_year,
-                        order_date__month=m_int,
-                        order_date__day=day
-                    )
-                    day_order_total = sum(order.total_price for order in day_orders)
-                    
                     day_bills = Bill.objects.filter(
                         created_at__year=selected_year,
                         created_at__month=m_int,
                         created_at__day=day
                     )
-                    day_bill_total = sum(bill.total for bill in day_bills)
-                    
-                    day_total = float(day_order_total) + float(day_bill_total)
+                    day_total = float(day_bills.aggregate(total=Sum('total'))['total'] or 0.00)
                     sales_values.append(day_total)
             else:
                 selected_month = 'all'
@@ -305,20 +281,11 @@ def dashboard_view(request):
         if selected_month == 'all':
             sales_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
             for month in range(1, 13):
-                month_orders = Order.objects.filter(
-                    status__in=['Paid', 'Shipped'],
-                    order_date__year=selected_year,
-                    order_date__month=month
-                )
-                month_order_total = sum(order.total_price for order in month_orders)
-                
                 month_bills = Bill.objects.filter(
                     created_at__year=selected_year,
                     created_at__month=month
                 )
-                month_bill_total = sum(bill.total for bill in month_bills)
-                
-                month_total = float(month_order_total) + float(month_bill_total)
+                month_total = float(month_bills.aggregate(total=Sum('total'))['total'] or 0.00)
                 sales_values.append(month_total)
                 
     category_labels = []
@@ -328,16 +295,12 @@ def dashboard_view(request):
         if val > 0:
             category_labels.append(category.name)
             category_values.append(float(val))
-
-    recent_orders = Order.objects.order_by('-order_date')[:5]
     
     context = {
         'total_products': total_products,
         'low_stock_count': low_stock_count,
         'low_stock_products': low_stock_products[:5],
-        'total_customers': total_customers,
         'total_revenue': total_revenue,
-        'recent_orders': recent_orders,
         'sales_labels': json.dumps(sales_labels),
         'sales_values': json.dumps(sales_values),
         'category_labels': json.dumps(category_labels),
@@ -351,117 +314,7 @@ def dashboard_view(request):
     return render(request, 'dashboard.html', context)
 
 
-# 6. Customers CRM (Admin Only)
-@admin_required
-def customers_view(request):
-    customers = Customer.objects.order_by('-date_created')
-    return render(request, 'customers.html', {'customers': customers})
-
-
-@admin_required
-def customer_add_view(request):
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        email = request.POST.get('email')
-        phone = request.POST.get('phone')
-        company_name = request.POST.get('company_name')
-        address = request.POST.get('address')
-        
-        if name:
-            customer = Customer.objects.create(
-                name=name, email=email, phone=phone,
-                company_name=company_name, address=address
-            )
-            messages.success(request, f"Customer '{customer.name}' registered successfully.")
-        else:
-            messages.error(request, "Failed to register customer: Name is required.")
-    return redirect('customers')
-
-
-# 7. Orders View & CRUD (Admin Only)
-@admin_required
-def orders_view(request):
-    status_choices = Order.STATUS_CHOICES
-    active_status = request.GET.get('status')
-    
-    orders = Order.objects.order_by('-order_date')
-    if active_status:
-        orders = orders.filter(status=active_status)
-        
-    products = Product.objects.all()
-    customers = Customer.objects.all()
-    
-    context = {
-        'orders': orders,
-        'products': products,
-        'customers': customers,
-        'status_choices': status_choices,
-        'active_status': active_status,
-    }
-    return render(request, 'orders.html', context)
-
-
-@admin_required
-def order_add_view(request):
-    if request.method == 'POST':
-        customer_id = request.POST.get('customer')
-        product_id = request.POST.get('product')
-        quantity = int(request.POST.get('quantity', 1))
-        status = request.POST.get('status', 'Pending')
-        notes = request.POST.get('notes')
-        
-        customer = get_object_or_404(Customer, id=customer_id)
-        product = get_object_or_404(Product, id=product_id)
-        
-        if product.stock_quantity < quantity:
-            messages.warning(
-                request,
-                f"Warning: Ordered quantity ({quantity}) exceeds current in-stock level ({product.stock_quantity}) for {product.name}."
-            )
-        
-        product.stock_quantity -= quantity
-        product.save()
-        
-        order = Order.objects.create(customer=customer, status=status, notes=notes)
-        OrderItem.objects.create(
-            order=order,
-            product=product,
-            quantity=quantity,
-            price=product.selling_price
-        )
-        
-        messages.success(request, f"Sales Order #{order.id} for {customer.name} created successfully.")
-    return redirect('orders')
-
-
-@admin_required
-def order_update_status_view(request, pk):
-    order = get_object_or_404(Order, pk=pk)
-    if request.method == 'POST':
-        old_status = order.status
-        new_status = request.POST.get('status')
-        if new_status in dict(Order.STATUS_CHOICES):
-            order.status = new_status
-            order.save()
-            messages.success(request, f"Order #{order.id} status updated from {old_status} to {new_status}.")
-    return redirect('orders')
-
-
-@admin_required
-def order_delete_view(request, pk):
-    order = get_object_or_404(Order, pk=pk)
-    if request.method == 'POST':
-        order_id = order.id
-        for item in order.items.all():
-            if item.product:
-                item.product.stock_quantity += item.quantity
-                item.product.save()
-        order.delete()
-        messages.warning(request, f"Order #{order_id} has been cancelled and deleted. Stock levels restored.")
-    return redirect('orders')
-
-
-# 8. Stock & Stock 1 Views (Admin Only)
+# 6. Stock & Stock 1 Views (Admin Only)
 @admin_required
 def stock_add_view(request):
     categories = Category.objects.all()

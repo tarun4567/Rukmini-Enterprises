@@ -33,19 +33,6 @@
         </div>
     </div>
 
-    <!-- Active Customers -->
-    <div class="metric-card">
-        <div class="metric-info">
-            <h3>Active Customers</h3>
-            <div class="metric-value">{{ total_customers }}</div>
-            <span class="metric-trend up">
-                <i class="fa-solid fa-users"></i> CRM Directory
-            </span>
-        </div>
-        <div class="metric-icon-box blue">
-            <i class="fa-solid fa-users"></i>
-        </div>
-    </div>
 
     <!-- Total Products -->
     <div class="metric-card">
@@ -123,8 +110,8 @@
     </div>
 </div>
 
-<!-- Grid for Low Stock & Recent Orders -->
-<div class="charts-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 0;">
+<!-- Grid for Low Stock Table -->
+<div class="charts-grid" style="grid-template-columns: 1fr; margin-bottom: 0;">
     <!-- Low Stock Alert Table -->
     <div class="card">
         <div class="card-header">
@@ -161,48 +148,6 @@
                             <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
                                 <i class="fa-solid fa-face-smile" style="font-size: 24px; margin-bottom: 8px; display: block; color: var(--success);"></i>
                                 All products have healthy stock levels.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Orders Table -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">Recent Customer Orders</div>
-            <a href="{% url 'orders' %}" style="font-size: 13px; font-weight: 600; color: var(--primary);">View All Orders</a>
-        </div>
-        <div class="card-body" style="padding: 0;">
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Status</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in recent_orders %}
-                        <tr>
-                            <td><code>#{{ order.id }}</code></td>
-                            <td>
-                                <div><strong>{{ order.customer.name }}</strong></div>
-                                <div style="font-size: 11px; color: var(--text-muted);">{{ order.order_date|date:"M d, Y" }}</div>
-                            </td>
-                            <td><span class="badge {{ order.status|lower }}">{{ order.status }}</span></td>
-                            <td><strong>₹{{ order.total_price|floatformat:2 }}</strong></td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                                <i class="fa-solid fa-receipt" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
-                                No orders logged yet.
                             </td>
                         </tr>
                         {% endfor %}

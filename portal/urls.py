@@ -12,12 +12,6 @@ urlpatterns = [
     path('stock/edit/<int:pk>/', views.stock_edit_view, name='stock_edit'),
     path('stock/delete/<int:pk>/', views.stock_delete_view, name='stock_delete'),
 
-    path('customers/', views.customers_view, name='customers'),
-    path('customers/add/', views.customer_add_view, name='customer_add'),
-    path('orders/', views.orders_view, name='orders'),
-    path('orders/add/', views.order_add_view, name='order_add'),
-    path('orders/edit-status/<int:pk>/', views.order_update_status_view, name='order_update_status'),
-    path('orders/delete/<int:pk>/', views.order_delete_view, name='order_delete'),
     path('stocks/', views.stocks_view, name='stocks'),
     path('billing/', views.billing_view, name='billing'),
     path('billing/records/', views.billing_records_view, name='billing_records'),
