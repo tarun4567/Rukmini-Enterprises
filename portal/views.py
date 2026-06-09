@@ -161,7 +161,11 @@ def billing_records_view(request):
         except ValueError:
             pass
             
-    daily_bills = Bill.objects.filter(created_at__date=query_date).order_by('-created_at')
+    # Define start and end of the day in local timezone
+    start_of_day = timezone.make_aware(datetime.datetime.combine(query_date, datetime.time.min))
+    end_of_day = timezone.make_aware(datetime.datetime.combine(query_date, datetime.time.max))
+    
+    daily_bills = Bill.objects.filter(created_at__range=(start_of_day, end_of_day)).order_by('-created_at')
     
     context = {
         'daily_bills': daily_bills,
@@ -200,7 +204,8 @@ def clear_due_view(request, pk):
         else:
             messages.error(request, "No payment amount was specified.")
             
-        bill_date_str = bill.created_at.strftime('%Y-%m-%d')
+        local_created_at = timezone.localtime(bill.created_at)
+        bill_date_str = local_created_at.strftime('%Y-%m-%d')
         return redirect(f"/billing/records/?date={bill_date_str}")
     return redirect('billing_records')
 
@@ -265,10 +270,12 @@ def dashboard_view(request):
                 days_in_month = calendar.monthrange(selected_year, m_int)[1]
                 sales_labels = [str(d) for d in range(1, days_in_month + 1)]
                 for day in range(1, days_in_month + 1):
+                    local_date = datetime.date(selected_year, m_int, day)
+                    start_of_day = timezone.make_aware(datetime.datetime.combine(local_date, datetime.time.min))
+                    end_of_day = timezone.make_aware(datetime.datetime.combine(local_date, datetime.time.max))
+                    
                     day_bills = Bill.objects.filter(
-                        created_at__year=selected_year,
-                        created_at__month=m_int,
-                        created_at__day=day
+                        created_at__range=(start_of_day, end_of_day)
                     )
                     day_total = float(day_bills.aggregate(total=Sum('total'))['total'] or 0.00)
                     sales_values.append(day_total)
@@ -324,7 +331,7 @@ def stock_add_view(request):
         form = StockForm(request.POST, request.FILES)
         if form.is_valid():
             product = form.save(commit=False)
-            product.initial_quantity = product.stock_quantity
+            product.stock_quantity = product.initial_quantity
             product.save()
             messages.success(request, f"Stock item '{product.name}' was added successfully.")
             return redirect('stock_add')
@@ -352,13 +359,13 @@ def stock_edit_view(request, pk):
     products = Product.objects.all().order_by('-id')
     
     if request.method == 'POST':
-        old_qty = product.stock_quantity
+        old_initial_qty = product.initial_quantity
         form = StockForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             product = form.save(commit=False)
-            qty_diff = product.stock_quantity - old_qty
+            qty_diff = product.initial_quantity - old_initial_qty
             if qty_diff != 0:
-                product.initial_quantity = max(0, (product.initial_quantity or 0) + qty_diff)
+                product.stock_quantity = max(0, product.stock_quantity + qty_diff)
             product.save()
             messages.success(request, f"Stock item '{product.name}' was updated successfully.")
             return redirect('stock_add')

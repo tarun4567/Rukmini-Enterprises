@@ -7,7 +7,7 @@ class StockForm(forms.ModelForm):
         model = Product
         fields = [
             'category', 'photo', 'company_name', 'name', 'description',
-            'stock_quantity', 'selling_price', 'stock_entered'
+            'initial_quantity', 'selling_price', 'stock_entered'
         ]
         labels = {
             'category': 'Category',
@@ -15,7 +15,7 @@ class StockForm(forms.ModelForm):
             'company_name': 'Company Name',
             'name': 'Product Name',
             'description': 'Description',
-            'stock_quantity': 'Qty',
+            'initial_quantity': 'Qty',
             'selling_price': 'Amt',
             'stock_entered': 'Stock Entered',
         }
@@ -37,7 +37,7 @@ class StockForm(forms.ModelForm):
         self.fields['company_name'].required = True
         self.fields['name'].required = True
         self.fields['description'].required = True
-        self.fields['stock_quantity'].required = True
+        self.fields['initial_quantity'].required = True
         self.fields['selling_price'].required = True
         self.fields['stock_entered'].required = True
         
@@ -45,5 +45,5 @@ class StockForm(forms.ModelForm):
 
         # Override default 0 initial value for new products so field is blank
         if not self.instance.pk:
-            self.fields['stock_quantity'].initial = None
+            self.fields['initial_quantity'].initial = None
 

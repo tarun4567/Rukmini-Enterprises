@@ -56,9 +56,11 @@ class Product(models.Model):
         if not self.purchase_price or self.purchase_price == 0:
             self.purchase_price = self.selling_price
 
-        # 4. Set initial_quantity on first save or if it is currently 0/unset
-        if not self.pk or not self.initial_quantity or self.initial_quantity == 0:
+        # 4. Sync initial_quantity and stock_quantity
+        if not self.initial_quantity or self.initial_quantity == 0:
             self.initial_quantity = self.stock_quantity
+        elif not self.stock_quantity or self.stock_quantity == 0:
+            self.stock_quantity = self.initial_quantity
 
         super().save(*args, **kwargs)
 
