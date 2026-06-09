@@ -16,4 +16,5 @@ urlpatterns = [
     path('billing/', views.billing_view, name='billing'),
     path('billing/records/', views.billing_records_view, name='billing_records'),
     path('billing/clear-due/<int:pk>/', views.clear_due_view, name='clear_due'),
+    path('billing/report/', views.revenue_report_view, name='revenue_report'),
 ]

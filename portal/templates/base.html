@@ -40,6 +40,12 @@
                     <span>Stock 1</span>
                 </a>
             </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'revenue_report' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'revenue_report' %}active{% endif %}">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Revenue Report</span>
+                </a>
+            </li>
             {% else %}
             <li class="sidebar-menu-item">
                 <a href="{% url 'billing' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing' %}active{% endif %}">

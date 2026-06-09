@@ -394,3 +394,123 @@ def stock_delete_view(request, pk):
     if referer and 'stock1' in referer:
         return redirect('stock1')
     return redirect('stock_add')
+
+
+@admin_required
+def revenue_report_view(request):
+    preset = request.GET.get('preset', 'monthly')
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    today = timezone.localdate()
+    start_date = today
+    end_date = today
+    
+    if preset == 'daily':
+        start_date = today
+        end_date = today
+    elif preset == 'monthly':
+        start_date = today.replace(day=1)
+        end_date = today
+    elif preset == '3months':
+        start_date = today - datetime.timedelta(days=90)
+        end_date = today
+    elif preset == '6months':
+        start_date = today - datetime.timedelta(days=180)
+        end_date = today
+    elif preset == '9months':
+        start_date = today - datetime.timedelta(days=270)
+        end_date = today
+    elif preset == 'yearly':
+        start_date = today - datetime.timedelta(days=365)
+        end_date = today
+    elif preset == 'custom':
+        if start_date_str and end_date_str:
+            try:
+                start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+    else:
+        # Default fallback
+        preset = 'monthly'
+        start_date = today.replace(day=1)
+        end_date = today
+
+    # Ensure start_date is not after end_date
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    # Convert local dates to timezone-aware datetime limits
+    start_dt = timezone.make_aware(datetime.datetime.combine(start_date, datetime.time.min))
+    end_dt = timezone.make_aware(datetime.datetime.combine(end_date, datetime.time.max))
+
+    # Query matching bills
+    bills = Bill.objects.filter(created_at__range=(start_dt, end_dt)).order_by('-created_at')
+
+    # Calculate metrics
+    total_revenue = float(bills.aggregate(total=Sum('total'))['total'] or 0.0)
+    total_sales = bills.count()
+    avg_order_value = total_revenue / total_sales if total_sales > 0 else 0.0
+    total_dues = float(sum(abs(b.amount_to_be_given) for b in bills if b.amount_to_be_given < 0))
+
+    # Group revenue by date for Chart.js trend lines
+    chart_labels = []
+    chart_values = []
+    
+    delta = end_date - start_date
+    if delta.days <= 45:
+        # Group by day
+        day_map = {}
+        curr = start_date
+        while curr <= end_date:
+            day_map[curr] = 0.0
+            curr += datetime.timedelta(days=1)
+            
+        for bill in bills:
+            local_bill_date = timezone.localtime(bill.created_at).date()
+            if local_bill_date in day_map:
+                day_map[local_bill_date] += float(bill.total)
+                
+        # Format labels nicely
+        for d in sorted(day_map.keys()):
+            chart_labels.append(d.strftime("%b %d"))
+            chart_values.append(day_map[d])
+    else:
+        # Group by month
+        month_map = {}
+        curr = start_date
+        while curr <= end_date:
+            m_key = (curr.year, curr.month)
+            month_map[m_key] = 0.0
+            if curr.month == 12:
+                curr = datetime.date(curr.year + 1, 1, 1)
+            else:
+                curr = datetime.date(curr.year, curr.month + 1, 1)
+                
+        # Fill data
+        for bill in bills:
+            local_bill_dt = timezone.localtime(bill.created_at)
+            m_key = (local_bill_dt.year, local_bill_dt.month)
+            if m_key in month_map:
+                month_map[m_key] += float(bill.total)
+                
+        # Format labels nicely
+        for m in sorted(month_map.keys()):
+            temp_date = datetime.date(m[0], m[1], 1)
+            chart_labels.append(temp_date.strftime("%b %Y"))
+            chart_values.append(month_map[m])
+
+    context = {
+        'preset': preset,
+        'start_date': start_date,
+        'end_date': end_date,
+        'bills': bills,
+        'total_revenue': total_revenue,
+        'total_sales': total_sales,
+        'avg_order_value': avg_order_value,
+        'total_dues': total_dues,
+        'chart_labels': json.dumps(chart_labels),
+        'chart_values': json.dumps(chart_values),
+    }
+    return render(request, 'revenue_report.html', context)
