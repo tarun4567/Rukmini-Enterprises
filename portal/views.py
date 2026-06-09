@@ -208,6 +208,7 @@ def clear_due_view(request, pk):
 # 5. Dashboard View (Admin Only)
 @admin_required
 def dashboard_view(request):
+    import calendar
     total_products = Product.objects.count()
     low_stock_products = Product.objects.filter(stock_quantity__lte=F('min_stock_level'))
     low_stock_count = low_stock_products.count()
@@ -218,30 +219,119 @@ def dashboard_view(request):
     bills_rev = float(Bill.objects.aggregate(total=Sum('total'))['total'] or 0.00)
     total_revenue = float(orders_rev) + bills_rev
     
-    today = timezone.now()
+    # Year & Month dynamic filters
+    current_year = timezone.now().year
+    
+    # Collect available years from DB
+    raw_years = sorted(list(set(
+        [current_year] + 
+        list(Order.objects.dates('order_date', 'year')) + 
+        list(Bill.objects.dates('created_at', 'year'))
+    )), reverse=True)
+    
+    available_years = []
+    for y in raw_years:
+        if hasattr(y, 'year'):
+            available_years.append(y.year)
+        else:
+            try:
+                available_years.append(int(y))
+            except (ValueError, TypeError):
+                pass
+                
+    available_years = sorted(list(set(available_years)), reverse=True)
+    if len(available_years) < 2:
+        available_years = [current_year, current_year - 1]
+
+    months_list = [
+        (1, "January"), (2, "February"), (3, "March"), (4, "April"),
+        (5, "May"), (6, "June"), (7, "July"), (8, "August"),
+        (9, "September"), (10, "October"), (11, "November"), (12, "December")
+    ]
+    
+    selected_year_str = request.GET.get('year')
+    selected_month_str = request.GET.get('month', 'all')
+    
+    try:
+        selected_year = int(selected_year_str) if selected_year_str else current_year
+    except ValueError:
+        selected_year = current_year
+        
+    selected_month = selected_month_str
+    selected_month_name = None
+    
     sales_labels = []
     sales_values = []
-    for i in range(5, -1, -1):
-        month_date = today - datetime.timedelta(days=i*30)
-        month_name = month_date.strftime("%b %Y")
-        sales_labels.append(month_name)
-        
-        month_orders = Order.objects.filter(
-            status__in=['Paid', 'Shipped'],
-            order_date__year=month_date.year,
-            order_date__month=month_date.month
-        )
-        month_order_total = sum(order.total_price for order in month_orders)
-        
-        month_bills = Bill.objects.filter(
-            created_at__year=month_date.year,
-            created_at__month=month_date.month
-        )
-        month_bill_total = sum(bill.total for bill in month_bills)
-        
-        month_total = float(month_order_total) + float(month_bill_total)
-        sales_values.append(month_total)
-        
+    
+    if selected_month == 'all':
+        # Monthly trend for the selected year
+        sales_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        for month in range(1, 13):
+            month_orders = Order.objects.filter(
+                status__in=['Paid', 'Shipped'],
+                order_date__year=selected_year,
+                order_date__month=month
+            )
+            month_order_total = sum(order.total_price for order in month_orders)
+            
+            month_bills = Bill.objects.filter(
+                created_at__year=selected_year,
+                created_at__month=month
+            )
+            month_bill_total = sum(bill.total for bill in month_bills)
+            
+            month_total = float(month_order_total) + float(month_bill_total)
+            sales_values.append(month_total)
+    else:
+        try:
+            m_int = int(selected_month)
+            if 1 <= m_int <= 12:
+                selected_month_name = dict(months_list).get(m_int)
+                days_in_month = calendar.monthrange(selected_year, m_int)[1]
+                sales_labels = [str(d) for d in range(1, days_in_month + 1)]
+                for day in range(1, days_in_month + 1):
+                    day_orders = Order.objects.filter(
+                        status__in=['Paid', 'Shipped'],
+                        order_date__year=selected_year,
+                        order_date__month=m_int,
+                        order_date__day=day
+                    )
+                    day_order_total = sum(order.total_price for order in day_orders)
+                    
+                    day_bills = Bill.objects.filter(
+                        created_at__year=selected_year,
+                        created_at__month=m_int,
+                        created_at__day=day
+                    )
+                    day_bill_total = sum(bill.total for bill in day_bills)
+                    
+                    day_total = float(day_order_total) + float(day_bill_total)
+                    sales_values.append(day_total)
+            else:
+                selected_month = 'all'
+        except ValueError:
+            selected_month = 'all'
+
+        # Fallback if invalid month fell back to 'all'
+        if selected_month == 'all':
+            sales_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            for month in range(1, 13):
+                month_orders = Order.objects.filter(
+                    status__in=['Paid', 'Shipped'],
+                    order_date__year=selected_year,
+                    order_date__month=month
+                )
+                month_order_total = sum(order.total_price for order in month_orders)
+                
+                month_bills = Bill.objects.filter(
+                    created_at__year=selected_year,
+                    created_at__month=month
+                )
+                month_bill_total = sum(bill.total for bill in month_bills)
+                
+                month_total = float(month_order_total) + float(month_bill_total)
+                sales_values.append(month_total)
+                
     category_labels = []
     category_values = []
     for category in Category.objects.all():
@@ -263,6 +353,11 @@ def dashboard_view(request):
         'sales_values': json.dumps(sales_values),
         'category_labels': json.dumps(category_labels),
         'category_values': json.dumps(category_values),
+        'available_years': available_years,
+        'months_list': months_list,
+        'selected_year': selected_year,
+        'selected_month': selected_month,
+        'selected_month_name': selected_month_name,
     }
     return render(request, 'dashboard.html', context)
 

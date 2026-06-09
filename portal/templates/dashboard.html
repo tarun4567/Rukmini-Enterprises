@@ -86,9 +86,21 @@
 <div class="charts-grid">
     <!-- Sales Revenue Trend -->
     <div class="card">
-        <div class="card-header">
-            <div class="card-title">Sales Revenue Trend (Last 6 Months)</div>
-            <i class="fa-solid fa-chart-line text-muted"></i>
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div class="card-title">Sales Revenue Trend ({% if selected_month_name %}{{ selected_month_name }} {% endif %}{{ selected_year }})</div>
+            <form method="GET" action="{% url 'dashboard' %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
+                <select name="month" class="form-control btn-sm" onchange="this.form.submit()" style="height: 32px; padding: 2px 8px; width: auto; font-size: 13px;">
+                    <option value="all" {% if selected_month == 'all' %}selected{% endif %}>All Months</option>
+                    {% for m_num, m_name in months_list %}
+                        <option value="{{ m_num }}" {% if selected_month|stringformat:"s" == m_num|stringformat:"s" %}selected{% endif %}>{{ m_name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="year" class="form-control btn-sm" onchange="this.form.submit()" style="height: 32px; padding: 2px 8px; width: auto; font-size: 13px;">
+                    {% for yr in available_years %}
+                        <option value="{{ yr }}" {% if selected_year|stringformat:"s" == yr|stringformat:"s" %}selected{% endif %}>{{ yr }}</option>
+                    {% endfor %}
+                </select>
+            </form>
         </div>
         <div class="card-body">
             <div style="position: relative; height: 300px;">
