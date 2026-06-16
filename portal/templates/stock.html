@@ -85,7 +85,7 @@
 
             <div class="form-group">
                 <label for="id_stock_entered" class="form-label">Stock Entered *</label>
-                <input type="date" id="id_stock_entered" name="stock_entered" class="form-control" value="{{ form.stock_entered.value|default:'' }}" required>
+                <input type="date" id="id_stock_entered" name="stock_entered" class="form-control" value="{{ form.stock_entered.value|date:'Y-m-d'|default:'' }}" required>
                 {% if form.stock_entered.errors %}
                     <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.stock_entered.errors.0 }}</div>
                 {% endif %}
@@ -112,6 +112,79 @@
     </div>
 </div>
 
+{% if is_edit %}
+<!-- ── Stock Update History Panel ── -->
+<div style="margin-top: 36px;">
+    <div class="page-header" style="margin-bottom: 16px;">
+        <div class="page-title-group">
+            <h2><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Stock Update History</h2>
+            <p>Every quantity update logged for <strong>{{ product.name }}</strong></p>
+        </div>
+        <span class="badge" style="background: var(--primary-light); color: var(--primary); font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 700;">
+            {{ stock_history|length }} update{{ stock_history|length|pluralize }}
+        </span>
+    </div>
+
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+                <table class="table" id="stockHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date of Stock Entry</th>
+                            <th style="text-align: center;">Qty Added / Removed</th>
+                            <th style="text-align: center;">Total Stock After</th>
+                            <th style="text-align: right;">Logged At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in stock_history %}
+                        <tr>
+                            <td style="color: var(--text-muted); font-size: 12px;">{{ forloop.counter }}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+                                        <i class="fa-solid fa-calendar-day" style="font-size: 12px;"></i>
+                                    </div>
+                                    <strong>{{ entry.date_entered|date:"d M Y" }}</strong>
+                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                {% if entry.qty_added > 0 %}
+                                    <span class="badge success" style="font-size: 13px; padding: 5px 14px;">
+                                        <i class="fa-solid fa-plus"></i> {{ entry.qty_added }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge danger" style="font-size: 13px; padding: 5px 14px;">
+                                        <i class="fa-solid fa-minus"></i> {{ entry.qty_added|slice:"1:" }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <strong style="font-size: 15px; color: var(--text-main);">{{ entry.qty_after }}</strong>
+                                <span style="font-size: 11px; color: var(--text-muted); margin-left: 4px;">units</span>
+                            </td>
+                            <td style="text-align: right; font-size: 12px; color: var(--text-muted);">
+                                {{ entry.recorded_at|date:"d M Y, h:i A" }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                <i class="fa-solid fa-clock-rotate-left" style="font-size: 32px; display: block; margin-bottom: 10px; color: var(--text-muted);"></i>
+                                No update history yet. History will appear here after the first stock update.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Stock List Below Form -->
 <div style="margin-top: 48px;">
     <div class="page-header" style="margin-bottom: 16px;">
@@ -119,10 +192,46 @@
             <h2>Recently Added Stock</h2>
             <p>List of all items registered in the database catalog.</p>
         </div>
-        <!-- Search bar -->
-        <div class="search-box" style="max-width: 280px;">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" class="form-control" placeholder="Search stock list..." data-search-table="stockTableAdd">
+        <!-- Search + Download -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="search-box" style="max-width: 280px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" class="form-control" placeholder="Search stock list..." data-search-table="stockTableAdd">
+            </div>
+            <!-- Download Dropdown -->
+            <div style="position: relative; display: inline-block;">
+                <button onclick="var m=document.getElementById('stockAddDownloadMenu'); m.style.display = m.style.display==='block'?'none':'block';"
+                    class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap;">
+                    <i class="fa-solid fa-download"></i> Download Report
+                    <i class="fa-solid fa-chevron-down" style="font-size: 11px;"></i>
+                </button>
+                <div id="stockAddDownloadMenu" style="display:none; position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; overflow: hidden;">
+                    <!-- Stock Report -->
+                    <div style="padding: 7px 16px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">Stock Report</div>
+                    <a href="{% url 'stock_report_excel' %}"
+                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        <i class="fa-solid fa-file-excel" style="color: #16a34a; font-size: 15px;"></i> Excel
+                    </a>
+                    <a href="{% url 'stock_report_pdf' %}"
+                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 15px;"></i> PDF
+                    </a>
+                    <!-- Stock History Report -->
+                    <div style="border-top: 1px solid var(--border-color); padding: 7px 16px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">Stock History</div>
+                    <a href="{% url 'stock_all_history_excel' %}"
+                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        <i class="fa-solid fa-file-excel" style="color: #16a34a; font-size: 15px;"></i> Excel
+                    </a>
+                    <a href="{% url 'stock_all_history_pdf' %}"
+                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 15px;"></i> PDF
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -163,7 +272,7 @@
                                 </div>
                             </td>
                             <td>{{ product.company_name|default:"General" }}</td>
-                            <td><span style="font-size: 12px; color: var(--text-muted);">{{ product.stock_entered|default:"Not Logged" }}</span></td>
+                            <td><span style="font-size: 12px; color: var(--text-muted);">{{ product.stock_entered|date:"d M Y"|default:"Not Logged" }}</span></td>
                             <td><strong>₹{{ product.selling_price }}</strong></td>
                             <td><strong>{{ product.initial_quantity }}</strong></td>
                             <td style="text-align: right;">

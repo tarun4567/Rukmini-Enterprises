@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Record Expense | Rukmini ERP{% endblock %}
+{% block header_title %}Record Expense{% endblock %}
+
+{% block content %}
+<style>
+    .expense-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1.8fr;
+        gap: 24px;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 992px) {
+        .expense-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-control-expense {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background: var(--bg-app);
+        color: var(--text-main);
+        font-family: var(--font-body);
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+
+    .form-control-expense:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* Recent Table Styles */
+    .expense-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        padding: 24px;
+    }
+
+    .card-title-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 12px;
+    }
+
+    .expense-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .expense-table th {
+        background: var(--bg-app);
+        padding: 10px 14px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        text-align: left;
+    }
+
+    .expense-table td {
+        padding: 12px 14px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-main);
+    }
+
+    .expense-table tr:hover {
+        background: rgba(0, 0, 0, 0.01);
+    }
+</style>
+
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>Record Company Expense</h1>
+        <p>Log payments given directly to companies or vendors for account reconciliation.</p>
+    </div>
+</div>
+
+<div class="expense-grid">
+    <!-- Log Form Card -->
+    <div class="expense-card">
+        <div class="card-title-bar">
+            <i class="fa-solid fa-hand-holding-dollar" style="color: var(--primary);"></i>
+            <span>Payment Details</span>
+        </div>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="company_name">Company/Vendor Name *</label>
+                <input type="text" id="company_name" name="company_name" class="form-control-expense" placeholder="e.g. Ichibon Corp, Diksha Ltd" required autocomplete="off">
+            </div>
+            
+            <div class="form-group">
+                <label for="amount">Amount Given (₹) *</label>
+                <input type="number" id="amount" name="amount" step="0.01" min="0.01" class="form-control-expense" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+                <label for="date_paid">Payment Date</label>
+                <input type="date" id="date_paid" name="date_paid" class="form-control-expense" value="{{ today|date:'Y-m-d' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Notes / Description</label>
+                <textarea id="description" name="description" rows="3" class="form-control-expense" placeholder="Optional notes about the transaction..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; margin-top: 24px;">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Record Transaction
+            </button>
+        </form>
+    </div>
+
+    <!-- Recent Expenses Card -->
+    <div class="expense-card">
+        <div class="card-title-bar">
+            <i class="fa-solid fa-receipt" style="color: var(--primary);"></i>
+            <span>Your 10 Most Recent Logged Expenses</span>
+        </div>
+        <div class="table-responsive">
+            <table class="expense-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Company / Vendor</th>
+                        <th>Notes</th>
+                        <th style="text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in recent_expenses %}
+                    <tr>
+                        <td style="font-weight: 600; white-space: nowrap;">{{ exp.date_paid|date:"M d, Y" }}</td>
+                        <td><strong>{{ exp.company_name }}</strong></td>
+                        <td style="color: var(--text-muted); font-size: 12px;">{{ exp.description|default:"—" }}</td>
+                        <td style="text-align: right; font-weight: 700; color: #ef4444;">₹{{ exp.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 48px;">
+                            <i class="fa-solid fa-calendar-xmark" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>
+                            No expenses logged by you yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

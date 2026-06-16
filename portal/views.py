@@ -24,7 +24,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
-from .models import Category, Product, Bill, BillItem
+from .models import Category, Product, Bill, BillItem, StockHistory, Expense
 from .forms import StockForm
 
 # 1. Custom Role-Based Decorators
@@ -114,8 +114,15 @@ def billing_view(request):
 
     if request.method == 'POST':
         cust_name    = request.POST.get('customer_name', '').strip()
+        cust_phone   = request.POST.get('customer_phone', '').strip()
         cust_address = request.POST.get('customer_address', '').strip()
         amount_given = float(request.POST.get('amount_given', 0.00))
+
+        # Validate phone number if provided
+        if cust_phone:
+            if not cust_phone.isdigit() or len(cust_phone) != 10:
+                messages.error(request, "Phone number must be exactly 10 digits (numbers only).")
+                return render(request, 'billing.html', {'products': products})
 
         # Collect all item rows sent from the form
         product_ids = request.POST.getlist('product_id[]')
@@ -168,6 +175,7 @@ def billing_view(request):
         amount_to_be_given = amount_given - grand_total
         bill = Bill.objects.create(
             customer_name=cust_name,
+            customer_phone=cust_phone or None,
             customer_address=cust_address,
             grand_total=grand_total,
             amount_given=amount_given,
@@ -225,6 +233,276 @@ def billing_records_view(request):
     return render(request, 'billing_records.html', context)
 
 
+
+# Helper to fetch user dashboard statistics and daily breakdown
+def _get_user_dashboard_data(request):
+    today = timezone.localdate()
+    start_date_default = today.replace(day=1)
+    end_date_default = today
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    try:
+        start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else start_date_default
+    except ValueError:
+        start_date = start_date_default
+
+    try:
+        end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else end_date_default
+    except ValueError:
+        end_date = end_date_default
+
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    # Limit to 90 days to prevent rendering lag
+    if (end_date - start_date).days > 90:
+        start_date = end_date - datetime.timedelta(days=90)
+
+    daily_data = []
+    current_day = start_date
+    total_sales = 0.0
+    total_due = 0.0
+    total_expenditure = 0.0
+
+    while current_day <= end_date:
+        day_start = timezone.make_aware(datetime.datetime.combine(current_day, datetime.time.min))
+        day_end = timezone.make_aware(datetime.datetime.combine(current_day, datetime.time.max))
+        
+        # Sales
+        day_bills = Bill.objects.filter(created_at__range=(day_start, day_end))
+        day_sales = float(day_bills.aggregate(total=Sum('grand_total'))['total'] or 0.00)
+        
+        # Due
+        day_due = abs(float(day_bills.filter(amount_to_be_given__lt=0).aggregate(total=Sum('amount_to_be_given'))['total'] or 0.00))
+        
+        # Expenditure
+        day_hist = StockHistory.objects.filter(date_entered=current_day, qty_added__gt=0)
+        day_hist_total = sum(float(h.qty_added * h.product.purchase_price) for h in day_hist.select_related('product'))
+        
+        day_init = Product.objects.filter(stock_entered=current_day)
+        day_init_total = sum(float(p.initial_quantity * p.purchase_price) for p in day_init)
+        
+        day_manual_exp = float(Expense.objects.filter(date_paid=current_day).aggregate(total=Sum('amount'))['total'] or 0.00)
+        
+        day_exp = day_hist_total + day_init_total + day_manual_exp
+        
+        total_sales += day_sales
+        total_due += day_due
+        total_expenditure += day_exp
+        
+        daily_data.append({
+            'date': current_day,
+            'display_date': current_day.strftime('%b %d, %Y'),
+            'sales': day_sales,
+            'due': day_due,
+            'expenditure': day_exp,
+            'net': day_sales - day_exp
+        })
+        
+        current_day += datetime.timedelta(days=1)
+
+    return daily_data, start_date, end_date, total_sales, total_due, total_expenditure
+
+
+
+# 4bc. User-Side Dashboard Excel Export (For All Authenticated Users)
+@login_required
+def user_dashboard_excel(request):
+    daily_data, start_date, end_date, total_sales, total_due, total_expenditure = _get_user_dashboard_data(request)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Accounts Report"
+
+    # Styles
+    header_fill = PatternFill("solid", fgColor="2563EB") # Royal Blue
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    summary_font = Font(bold=True, size=11)
+    bold = Font(bold=True)
+    center = Alignment(horizontal="center", vertical="center")
+    right = Alignment(horizontal="right", vertical="center")
+    thin = Side(style="thin", color="D1D5DB")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # Title
+    ws.merge_cells("A1:E1")
+    ws["A1"] = "Rukmini Enterprises — Accounts Report"
+    ws["A1"].font = Font(bold=True, size=14, color="1E293B")
+    ws["A1"].alignment = center
+
+    ws.merge_cells("A2:E2")
+    ws["A2"] = f"Period: {start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')}"
+    ws["A2"].font = Font(size=10, color="64748B")
+    ws["A2"].alignment = center
+
+    ws.append([]) # empty row
+
+    # Summary Metrics Table
+    ws.append(["Summary Metrics", "", "", "", ""])
+    ws.merge_cells("A4:E4")
+    ws["A4"].font = Font(bold=True, size=12)
+    ws["A4"].fill = PatternFill("solid", fgColor="F3F4F6")
+
+    ws.append(["Total Sales Done", "Total Outstanding Dues", "Total Expenditure", "Net Balance", ""])
+    ws.merge_cells("D5:E5")
+    for col in range(1, 6):
+        ws.cell(row=5, column=col).font = bold
+        ws.cell(row=5, column=col).border = border
+
+    ws.append([total_sales, total_due, total_expenditure, total_sales - total_expenditure, ""])
+    ws.merge_cells("D6:E6")
+    for col in range(1, 6):
+        cell = ws.cell(row=6, column=col)
+        cell.font = summary_font
+        cell.border = border
+        if col == 4:
+            if (total_sales - total_expenditure) >= 0:
+                cell.font = Font(bold=True, color="15803D") # green
+            else:
+                cell.font = Font(bold=True, color="B91C1C") # red
+
+    ws.append([]) # empty row
+
+    # Headers
+    headers = ["Date", "Sales Done (INR)", "Outstanding Dues (INR)", "Expenditure (INR)", "Net Balance (INR)"]
+    ws.append(headers)
+    for col, cell in enumerate(ws[8], 1):
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    for d in daily_data:
+        ws.append([
+            d['display_date'],
+            d['sales'],
+            d['due'],
+            d['expenditure'],
+            d['net']
+        ])
+        row = ws.max_row
+        for col_idx, cell in enumerate(ws[row], 1):
+            cell.border = border
+            if col_idx > 1:
+                cell.alignment = right
+                cell.number_format = '₹#,##0.00'
+            else:
+                cell.alignment = center
+
+    # Column widths
+    col_widths = [16, 20, 24, 20, 20]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    filename = f"accounts_report_{start_date}_to_{end_date}.xlsx"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+
+# 4bd. User-Side Dashboard PDF Export (For All Authenticated Users)
+@login_required
+def user_dashboard_pdf(request):
+    daily_data, start_date, end_date, total_sales, total_due, total_expenditure = _get_user_dashboard_data(request)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            rightMargin=1.5*cm, leftMargin=1.5*cm,
+                            topMargin=1.5*cm, bottomMargin=1.5*cm)
+
+    elements = []
+
+    title_style = ParagraphStyle('title', fontSize=15, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor('#1E293B'), alignment=TA_CENTER, spaceAfter=3)
+    sub_style   = ParagraphStyle('sub',   fontSize=9,  fontName='Helvetica',
+                                  textColor=colors.HexColor('#64748B'), alignment=TA_CENTER, spaceAfter=12)
+    label_style = ParagraphStyle('lbl',   fontSize=9,  fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor('#475569'), alignment=TA_CENTER)
+    val_style   = ParagraphStyle('val',   fontSize=12, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor('#0F172A'), alignment=TA_CENTER)
+
+    elements.append(Paragraph("Rukmini Enterprises", title_style))
+    elements.append(Paragraph(f"Monthly Accounts Report (Period: {start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')})", sub_style))
+
+    # Summary table
+    summary_data = [
+        [
+            Paragraph("Total Sales Done", label_style),
+            Paragraph("Total Outstanding Dues", label_style),
+            Paragraph("Total Expenditure", label_style),
+            Paragraph("Net Balance", label_style)
+        ],
+        [
+            Paragraph(f"₹{total_sales:,.2f}", val_style),
+            Paragraph(f"₹{total_due:,.2f}", val_style),
+            Paragraph(f"₹{total_expenditure:,.2f}", val_style),
+            Paragraph(f"₹{total_sales - total_expenditure:,.2f}", ParagraphStyle('net_val', parent=val_style, textColor=colors.HexColor('#15803D') if (total_sales - total_expenditure) >= 0 else colors.HexColor('#B91C1C')))
+        ]
+    ]
+
+    sum_table = Table(summary_data, colWidths=[4.5*cm, 4.5*cm, 4.5*cm, 4.5*cm])
+    sum_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#E2E8F0')),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+    ]))
+    elements.append(sum_table)
+    elements.append(Spacer(1, 15))
+
+    # Daily Ledger details
+    th_style = ParagraphStyle('th', fontSize=8, fontName='Helvetica-Bold', textColor=colors.white, alignment=TA_CENTER)
+    td_style = ParagraphStyle('td', fontSize=8, fontName='Helvetica', textColor=colors.HexColor('#334155'))
+    td_num_style = ParagraphStyle('td_num', fontSize=8, fontName='Helvetica', textColor=colors.HexColor('#334155'), alignment=TA_RIGHT)
+
+    table_data = [[
+        Paragraph("Date", th_style),
+        Paragraph("Sales Done", th_style),
+        Paragraph("Outstanding Dues", th_style),
+        Paragraph("Expenditure", th_style),
+        Paragraph("Net Balance", th_style),
+    ]]
+
+    for d in daily_data:
+        table_data.append([
+            Paragraph(d['display_date'], td_style),
+            Paragraph(f"₹{d['sales']:,.2f}", td_num_style),
+            Paragraph(f"₹{d['due']:,.2f}", td_num_style),
+            Paragraph(f"₹{d['expenditure']:,.2f}", td_num_style),
+            Paragraph(f"₹{d['net']:,.2f}", ParagraphStyle('net_td', parent=td_num_style, fontName='Helvetica-Bold', textColor=colors.HexColor('#16A34A') if d['net'] >= 0 else colors.HexColor('#DC2626'))),
+        ])
+
+    ledger_table = Table(table_data, colWidths=[3.5*cm, 3.6*cm, 3.7*cm, 3.6*cm, 3.6*cm])
+    ledger_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2563EB')),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('TOPPADDING', (0,0), (-1,0), 6),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F8FAFC')]),
+        ('TOPPADDING', (0,1), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 5),
+    ]))
+    elements.append(ledger_table)
+
+    doc.build(elements)
+    pdf_val = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(content_type='application/pdf')
+    filename = f"accounts_report_{start_date}_to_{end_date}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response.write(pdf_val)
+    return response
+
+
 # 4c. Clear Due View (For Standard User Only)
 @standard_user_required
 def clear_due_view(request, pk):
@@ -264,112 +542,114 @@ def clear_due_view(request, pk):
 # 5. Dashboard View (Admin Only)
 @admin_required
 def dashboard_view(request):
-    import calendar
-    total_products = Product.objects.count()
-    low_stock_products = Product.objects.filter(stock_quantity__lte=F('min_stock_level'))
-    low_stock_count = low_stock_products.count()
-    
-    total_revenue = float(Bill.objects.aggregate(total=Sum('grand_total'))['total'] or 0.00)
-    
-    # Year & Month dynamic filters
-    current_year = timezone.now().year
-    
-    # Collect available years from DB
-    raw_years = (
-        [current_year] + 
-        [y.year for y in Bill.objects.dates('created_at', 'year') if hasattr(y, 'year')]
-    )
-    available_years = sorted(list(set(raw_years)), reverse=True)
-    if len(available_years) < 2:
-        available_years = [current_year, current_year - 1]
+    daily_data, start_date, end_date, total_sales, total_due, total_expenditure = _get_user_dashboard_data(request)
 
-    months_list = [
-        (1, "January"), (2, "February"), (3, "March"), (4, "April"),
-        (5, "May"), (6, "June"), (7, "July"), (8, "August"),
-        (9, "September"), (10, "October"), (11, "November"), (12, "December")
-    ]
+    chart_labels = [d['display_date'] for d in daily_data]
+    chart_sales = [d['sales'] for d in daily_data]
+    chart_due = [d['due'] for d in daily_data]
+    chart_exp = [d['expenditure'] for d in daily_data]
+
+    context = {
+        'start_date': start_date,
+        'end_date': end_date,
+        'total_sales': total_sales,
+        'total_due': total_due,
+        'total_expenditure': total_expenditure,
+        'daily_data': list(reversed(daily_data)), # Show most recent first in table
+        'chart_labels': json.dumps(chart_labels),
+        'chart_sales': json.dumps(chart_sales),
+        'chart_due': json.dumps(chart_due),
+        'chart_exp': json.dumps(chart_exp),
+        'is_admin': True,
+    }
+    return render(request, 'user_dashboard.html', context)
+
+
+# 5b. Admin Expenses List/Manage View (Admin Only)
+@admin_required
+def admin_expenses_view(request):
+    # Handle POST requests (Create or Delete)
+    if request.method == 'POST':
+        # 1. Handle Deletion
+        delete_id = request.POST.get('delete_id')
+        if delete_id:
+            expense_to_delete = get_object_or_404(Expense, pk=delete_id)
+            comp = expense_to_delete.company_name
+            amt = expense_to_delete.amount
+            expense_to_delete.delete()
+            messages.warning(request, f"Expense of ₹{amt:.2f} to '{comp}' was deleted successfully.")
+            return redirect('admin_expenses')
+            
+        # 2. Handle Creation
+        company_name = request.POST.get('company_name', '').strip()
+        amount_str   = request.POST.get('amount')
+        date_paid_str = request.POST.get('date_paid')
+        description  = request.POST.get('description', '').strip()
+        
+        if company_name and amount_str:
+            try:
+                amount = float(amount_str)
+                if amount <= 0:
+                    messages.error(request, "Amount must be greater than zero.")
+                else:
+                    date_paid = timezone.localdate()
+                    if date_paid_str:
+                        date_paid = datetime.datetime.strptime(date_paid_str, '%Y-%m-%d').date()
+                        
+                    Expense.objects.create(
+                        company_name=company_name,
+                        amount=amount,
+                        description=description,
+                        date_paid=date_paid,
+                        recorded_by=request.user
+                    )
+                    messages.success(request, f"Expense of ₹{amount:.2f} paid to '{company_name}' recorded successfully.")
+                    return redirect('admin_expenses')
+            except ValueError:
+                messages.error(request, "Invalid amount or date format.")
+        else:
+            messages.error(request, "Please fill in all required fields.")
+            
+    # Search and date filters
+    company_query = request.GET.get('company', '').strip()
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
     
-    selected_year_str = request.GET.get('year')
-    selected_month_str = request.GET.get('month', 'all')
+    today = timezone.localdate()
+    start_date = today.replace(day=1)
+    end_date = today
     
     try:
-        selected_year = int(selected_year_str) if selected_year_str else current_year
+        if start_date_str:
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
     except ValueError:
-        selected_year = current_year
+        pass
         
-    selected_month = selected_month_str
-    selected_month_name = None
-    
-    sales_labels = []
-    sales_values = []
-    
-    if selected_month == 'all':
-        # Monthly trend for the selected year
-        sales_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        for month in range(1, 13):
-            month_bills = Bill.objects.filter(
-                created_at__year=selected_year,
-                created_at__month=month
-            )
-            month_total = float(month_bills.aggregate(total=Sum('grand_total'))['total'] or 0.00)
-            sales_values.append(month_total)
-    else:
-        try:
-            m_int = int(selected_month)
-            if 1 <= m_int <= 12:
-                selected_month_name = dict(months_list).get(m_int)
-                days_in_month = calendar.monthrange(selected_year, m_int)[1]
-                sales_labels = [str(d) for d in range(1, days_in_month + 1)]
-                for day in range(1, days_in_month + 1):
-                    local_date = datetime.date(selected_year, m_int, day)
-                    start_of_day = timezone.make_aware(datetime.datetime.combine(local_date, datetime.time.min))
-                    end_of_day = timezone.make_aware(datetime.datetime.combine(local_date, datetime.time.max))
-                    
-                    day_bills = Bill.objects.filter(
-                        created_at__range=(start_of_day, end_of_day)
-                    )
-                    day_total = float(day_bills.aggregate(total=Sum('grand_total'))['total'] or 0.00)
-                    sales_values.append(day_total)
-            else:
-                selected_month = 'all'
-        except ValueError:
-            selected_month = 'all'
+    try:
+        if end_date_str:
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        pass
 
-        # Fallback if invalid month fell back to 'all'
-        if selected_month == 'all':
-            sales_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-            for month in range(1, 13):
-                month_bills = Bill.objects.filter(
-                    created_at__year=selected_year,
-                    created_at__month=month
-                )
-                month_total = float(month_bills.aggregate(total=Sum('grand_total'))['total'] or 0.00)
-                sales_values.append(month_total)
-                
-    category_labels = []
-    category_values = []
-    for category in Category.objects.all():
-        val = sum(p.stock_quantity * p.selling_price for p in category.products.all())
-        if val > 0:
-            category_labels.append(category.name)
-            category_values.append(float(val))
+    expenses = Expense.objects.filter(date_paid__range=(start_date, end_date))
     
+    if company_query:
+        expenses = expenses.filter(company_name__icontains=company_query)
+        
+    expenses = expenses.order_by('-date_paid', '-created_at')
+    
+    # Calculate sum
+    total_expense = float(expenses.aggregate(total=Sum('amount'))['total'] or 0.00)
+
     context = {
-        'total_products': total_products,
-        'low_stock_count': low_stock_count,
-        'low_stock_products': low_stock_products[:5],
-        'total_revenue': total_revenue,
-        'sales_labels': json.dumps(sales_labels),
-        'sales_values': json.dumps(sales_values),
-        'category_labels': json.dumps(category_labels),
-        'category_values': json.dumps(category_values),
-        'available_years': available_years,
-        'months_list': months_list,
-        'selected_year': selected_year,
-        'selected_month': selected_month,
-        'selected_month_name': selected_month_name,
+        'expenses': expenses,
+        'company_query': company_query,
+        'start_date': start_date,
+        'end_date': end_date,
+        'total_expense': total_expense,
+        'today': today,
     }
-    return render(request, 'dashboard.html', context)
+    return render(request, 'admin_expenses.html', context)
 
 
 # 6. Stock & Stock 1 Views (Admin Only)
@@ -418,17 +698,32 @@ def stock_edit_view(request, pk):
             if qty_diff != 0:
                 product.stock_quantity = max(0, product.stock_quantity + qty_diff)
             product.save()
+
+            # ── Log stock history whenever qty is changed ──
+            if qty_diff != 0:
+                StockHistory.objects.create(
+                    product=product,
+                    date_entered=product.stock_entered or timezone.localdate(),
+                    qty_added=qty_diff,
+                    qty_after=product.stock_quantity,
+                )
+
             messages.success(request, f"Stock item '{product.name}' was updated successfully.")
             return redirect('stock_add')
     else:
         form = StockForm(instance=product)
+        # Default stock_entered to today so admin just confirms the current update date
+        form.initial['stock_entered'] = timezone.localdate()
         
+    stock_history = product.stock_history.all()
+
     context = {
         'form': form,
         'products': products,
         'categories': categories,
         'product': product,
         'is_edit': True,
+        'stock_history': stock_history,
     }
     return render(request, 'stock.html', context)
 
@@ -974,4 +1269,416 @@ def stock_report_pdf(request):
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="stock_report_{timezone.localdate()}.pdf"'
+    return response
+
+
+# ── Stock History: Excel Download ────────────────────────────
+@admin_required
+def stock_history_excel(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    history = product.stock_history.all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Stock History"
+
+    # Styles
+    header_fill = PatternFill("solid", fgColor="4F46E5")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    add_fill    = PatternFill("solid", fgColor="D1FAE5")   # green tint for additions
+    rem_fill    = PatternFill("solid", fgColor="FEE2E2")   # red tint for removals
+    bold        = Font(bold=True)
+    center      = Alignment(horizontal="center", vertical="center")
+    thin        = Side(style="thin", color="D1D5DB")
+    border      = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # Title block
+    ws.merge_cells("A1:E1")
+    ws["A1"] = f"Rukmini Enterprises — Stock Update History"
+    ws["A1"].font = Font(bold=True, size=14, color="1E293B")
+    ws["A1"].alignment = center
+
+    ws.merge_cells("A2:E2")
+    ws["A2"] = f"Product: {product.name}  |  Company: {product.company_name or '—'}  |  Category: {product.category.name if product.category else '—'}"
+    ws["A2"].font = Font(size=10, color="64748B")
+    ws["A2"].alignment = center
+
+    ws.merge_cells("A3:E3")
+    ws["A3"] = f"Generated: {timezone.localdate().strftime('%d %b %Y')}  |  Current Stock: {product.stock_quantity} units"
+    ws["A3"].font = Font(size=10, color="64748B")
+    ws["A3"].alignment = center
+    ws.append([])
+
+    # Column headers
+    headers = ["#", "Date of Stock Entry", "Qty Added / Removed", "Total Stock After Update", "Logged At"]
+    ws.append(headers)
+    for col, cell in enumerate(ws[5], 1):
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    # Data rows
+    for i, entry in enumerate(history, 1):
+        ws.append([
+            i,
+            entry.date_entered.strftime("%d %b %Y"),
+            f"+{entry.qty_added}" if entry.qty_added > 0 else str(entry.qty_added),
+            entry.qty_after,
+            timezone.localtime(entry.recorded_at).strftime("%d %b %Y, %I:%M %p"),
+        ])
+        row = ws.max_row
+        fill = add_fill if entry.qty_added > 0 else rem_fill
+        for cell in ws[row]:
+            cell.border = border
+            cell.alignment = Alignment(vertical="center", horizontal="center")
+        # Colour the qty column
+        ws.cell(row=row, column=3).fill = fill
+
+    if not history.exists():
+        ws.append(["", "No history records found.", "", "", ""])
+
+    # Column widths
+    for i, w in enumerate([5, 22, 22, 26, 28], 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    safe_name = product.name.replace(" ", "_")[:30]
+    response["Content-Disposition"] = f'attachment; filename="stock_history_{safe_name}_{timezone.localdate()}.xlsx"'
+    wb.save(response)
+    return response
+
+
+# ── Stock History: PDF Download ────────────────────────────
+@admin_required
+def stock_history_pdf(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    history = product.stock_history.all()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            rightMargin=1.5*cm, leftMargin=1.5*cm,
+                            topMargin=1.5*cm, bottomMargin=1.5*cm)
+    elements = []
+
+    title_style = ParagraphStyle('htitle', fontSize=15, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor('#1E293B'), alignment=TA_CENTER, spaceAfter=4)
+    sub_style   = ParagraphStyle('hsub',   fontSize=9,  fontName='Helvetica',
+                                  textColor=colors.HexColor('#64748B'), alignment=TA_CENTER, spaceAfter=4)
+
+    elements.append(Paragraph("Rukmini Enterprises - Stock Update History", title_style))
+    elements.append(Paragraph(
+        f"Product: {product.name}  |  Company: {product.company_name or '—'}  |  Category: {product.category.name if product.category else '—'}",
+        sub_style
+    ))
+    elements.append(Paragraph(
+        f"Generated: {timezone.localdate().strftime('%d %b %Y')}   |   Current Stock: {product.stock_quantity} units",
+        sub_style
+    ))
+    elements.append(Spacer(1, 0.4*cm))
+
+    # Summary strip
+    total_added   = sum(e.qty_added for e in history if e.qty_added > 0)
+    total_removed = abs(sum(e.qty_added for e in history if e.qty_added < 0))
+    summary_data = [[
+        "Total Updates", str(history.count()),
+        "Total Added", str(total_added),
+        "Total Removed", str(total_removed),
+        "Current Stock", str(product.stock_quantity),
+    ]]
+    sw = [3.46*cm] * 8
+    summary_tbl = Table(summary_data, colWidths=sw)
+    summary_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0), (-1,-1), colors.HexColor('#EEF2FF')),
+        ('FONTNAME',      (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0), (-1,-1), 8.5),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('BOX',           (0,0), (-1,-1), 0.6, colors.HexColor('#C7D2FE')),
+        ('INNERGRID',     (0,0), (-1,-1), 0.4, colors.HexColor('#C7D2FE')),
+        ('TOPPADDING',    (0,0), (-1,-1), 7),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 7),
+    ]))
+    elements.append(summary_tbl)
+    elements.append(Spacer(1, 0.4*cm))
+
+    # Detail table
+    col_headers = ["#", "Date of Stock Entry", "Qty Added / Removed", "Total Stock After Update", "Logged At"]
+    col_widths_pdf = [1.2*cm, 5.5*cm, 5.5*cm, 6.0*cm, 6.5*cm]
+    data = [col_headers]
+
+    for i, entry in enumerate(history, 1):
+        qty_text = f"+{entry.qty_added}" if entry.qty_added > 0 else str(entry.qty_added)
+        data.append([
+            str(i),
+            entry.date_entered.strftime("%d %b %Y"),
+            qty_text,
+            f"{entry.qty_after} units",
+            timezone.localtime(entry.recorded_at).strftime("%d %b %Y, %I:%M %p"),
+        ])
+
+    if len(data) == 1:
+        data.append(["", "No history records found.", "", "", ""])
+
+    tbl = Table(data, colWidths=col_widths_pdf, repeatRows=1)
+
+    # Build row-by-row colours for added vs removed
+    row_styles = [
+        ('BACKGROUND',    (0,0), (-1,0),  colors.HexColor('#4F46E5')),
+        ('TEXTCOLOR',     (0,0), (-1,0),  colors.white),
+        ('FONTNAME',      (0,0), (-1,0),  'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0), (-1,0),  9),
+        ('ALIGN',         (0,0), (-1,0),  'CENTER'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING',    (0,0), (-1,0),  7),
+        ('BOTTOMPADDING', (0,0), (-1,0),  7),
+        ('FONTNAME',      (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE',      (0,1), (-1,-1), 8.5),
+        ('TOPPADDING',    (0,1), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 5),
+        ('ALIGN',         (0,1), (0,-1),  'CENTER'),
+        ('ALIGN',         (1,1), (1,-1),  'CENTER'),
+        ('ALIGN',         (2,1), (2,-1),  'CENTER'),
+        ('ALIGN',         (3,1), (3,-1),  'CENTER'),
+        ('ALIGN',         (4,1), (4,-1),  'CENTER'),
+        ('BOX',           (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('INNERGRID',     (0,0), (-1,-1), 0.3, colors.HexColor('#E2E8F0')),
+        ('LEFTPADDING',   (0,0), (-1,-1), 5),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 5),
+    ]
+    # Colour qty column per row
+    for i, entry in enumerate(history, 1):
+        if entry.qty_added > 0:
+            row_styles.append(('TEXTCOLOR', (2, i), (2, i), colors.HexColor('#065F46')))
+            row_styles.append(('BACKGROUND', (2, i), (2, i), colors.HexColor('#D1FAE5')))
+        else:
+            row_styles.append(('TEXTCOLOR', (2, i), (2, i), colors.HexColor('#991B1B')))
+            row_styles.append(('BACKGROUND', (2, i), (2, i), colors.HexColor('#FEE2E2')))
+        # Alternating row bg
+        if i % 2 == 0:
+            row_styles.append(('BACKGROUND', (0, i), (1, i), colors.HexColor('#F8FAFC')))
+            row_styles.append(('BACKGROUND', (3, i), (4, i), colors.HexColor('#F8FAFC')))
+
+    tbl.setStyle(TableStyle(row_styles))
+    elements.append(tbl)
+
+    doc.build(elements)
+    buffer.seek(0)
+    safe_name = product.name.replace(" ", "_")[:30]
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="stock_history_{safe_name}_{timezone.localdate()}.pdf"'
+    return response
+
+
+# ── All Stock History: Excel Download ────────────────────────────
+@admin_required
+def stock_all_history_excel(request):
+    from .models import StockHistory
+    history_qs = StockHistory.objects.select_related('product').order_by('product__name', '-recorded_at')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Stock History"
+
+    header_fill = PatternFill("solid", fgColor="4F46E5")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    group_fill  = PatternFill("solid", fgColor="EEF2FF")
+    add_fill    = PatternFill("solid", fgColor="D1FAE5")
+    rem_fill    = PatternFill("solid", fgColor="FEE2E2")
+    bold        = Font(bold=True)
+    center      = Alignment(horizontal="center", vertical="center")
+    thin        = Side(style="thin", color="D1D5DB")
+    border      = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # Title
+    ws.merge_cells("A1:F1")
+    ws["A1"] = "Rukmini Enterprises — All Stock Update History"
+    ws["A1"].font = Font(bold=True, size=14, color="1E293B")
+    ws["A1"].alignment = center
+
+    ws.merge_cells("A2:F2")
+    ws["A2"] = f"Generated: {timezone.localdate().strftime('%d %b %Y')}  |  Total Records: {history_qs.count()}"
+    ws["A2"].font = Font(size=10, color="64748B")
+    ws["A2"].alignment = center
+    ws.append([])
+
+    # Column headers
+    headers = ["#", "Product Name", "Date of Stock Entry", "Qty Added / Removed", "Total Stock After", "Logged At"]
+    ws.append(headers)
+    for col, cell in enumerate(ws[4], 1):
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    current_product = None
+    row_num = 0
+    for entry in history_qs:
+        # Group header row per product
+        if entry.product != current_product:
+            current_product = entry.product
+            ws.append([
+                "", f"▶  {entry.product.name}  —  {entry.product.company_name or '—'}",
+                "", "", "", ""
+            ])
+            grp_row = ws.max_row
+            ws.merge_cells(f"B{grp_row}:F{grp_row}")
+            for cell in ws[grp_row]:
+                cell.fill = group_fill
+                cell.font = Font(bold=True, size=10, color="4F46E5")
+                cell.alignment = Alignment(vertical="center")
+
+        row_num += 1
+        qty_str = f"+{entry.qty_added}" if entry.qty_added > 0 else str(entry.qty_added)
+        ws.append([
+            row_num,
+            entry.product.name,
+            entry.date_entered.strftime("%d %b %Y"),
+            qty_str,
+            entry.qty_after,
+            timezone.localtime(entry.recorded_at).strftime("%d %b %Y, %I:%M %p"),
+        ])
+        row = ws.max_row
+        fill = add_fill if entry.qty_added > 0 else rem_fill
+        for cell in ws[row]:
+            cell.border = border
+            cell.alignment = Alignment(vertical="center", horizontal="center")
+        ws.cell(row=row, column=4).fill = fill
+
+    if not history_qs.exists():
+        ws.append(["", "No stock history records found.", "", "", "", ""])
+
+    for i, w in enumerate([5, 28, 22, 22, 22, 28], 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="all_stock_history_{timezone.localdate()}.xlsx"'
+    wb.save(response)
+    return response
+
+
+# ── All Stock History: PDF Download ────────────────────────────
+@admin_required
+def stock_all_history_pdf(request):
+    from .models import StockHistory
+    history_qs = StockHistory.objects.select_related('product').order_by('product__name', '-recorded_at')
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            rightMargin=1.5*cm, leftMargin=1.5*cm,
+                            topMargin=1.5*cm, bottomMargin=1.5*cm)
+    elements = []
+
+    title_style = ParagraphStyle('ahtitle', fontSize=15, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor('#1E293B'), alignment=TA_CENTER, spaceAfter=4)
+    sub_style   = ParagraphStyle('ahsub', fontSize=9, fontName='Helvetica',
+                                  textColor=colors.HexColor('#64748B'), alignment=TA_CENTER, spaceAfter=12)
+    group_style = ParagraphStyle('ahgrp', fontSize=9, fontName='Helvetica-Bold',
+                                  textColor=colors.HexColor('#4F46E5'))
+
+    elements.append(Paragraph("Rukmini Enterprises - All Stock Update History", title_style))
+    elements.append(Paragraph(
+        f"Generated: {timezone.localdate().strftime('%d %b %Y')}   |   Total Records: {history_qs.count()}",
+        sub_style
+    ))
+
+    # Summary strip
+    total_added   = sum(e.qty_added for e in history_qs if e.qty_added > 0)
+    total_removed = abs(sum(e.qty_added for e in history_qs if e.qty_added < 0))
+    summary_data = [[
+        "Total Records", str(history_qs.count()),
+        "Total Added", str(total_added),
+        "Total Removed", str(total_removed),
+        "Products Tracked", str(history_qs.values('product').distinct().count()),
+    ]]
+    sw = [3.46*cm] * 8
+    summary_tbl = Table(summary_data, colWidths=sw)
+    summary_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0), (-1,-1), colors.HexColor('#EEF2FF')),
+        ('FONTNAME',      (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0), (-1,-1), 8.5),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('BOX',           (0,0), (-1,-1), 0.6, colors.HexColor('#C7D2FE')),
+        ('INNERGRID',     (0,0), (-1,-1), 0.4, colors.HexColor('#C7D2FE')),
+        ('TOPPADDING',    (0,0), (-1,-1), 7),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 7),
+    ]))
+    elements.append(summary_tbl)
+    elements.append(Spacer(1, 0.4*cm))
+
+    # Detail table
+    col_headers = ["#", "Product Name", "Date of Entry", "Qty Added / Removed", "Stock After", "Logged At"]
+    col_widths_pdf = [1.0*cm, 6.5*cm, 4.5*cm, 4.5*cm, 3.5*cm, 5.7*cm]
+    data = [col_headers]
+    row_styles = [
+        ('BACKGROUND',    (0,0), (-1,0),  colors.HexColor('#4F46E5')),
+        ('TEXTCOLOR',     (0,0), (-1,0),  colors.white),
+        ('FONTNAME',      (0,0), (-1,0),  'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0), (-1,0),  9),
+        ('ALIGN',         (0,0), (-1,0),  'CENTER'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING',    (0,0), (-1,0),  6),
+        ('BOTTOMPADDING', (0,0), (-1,0),  6),
+        ('FONTNAME',      (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE',      (0,1), (-1,-1), 8),
+        ('TOPPADDING',    (0,1), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 4),
+        ('ALIGN',         (0,1), (0,-1),  'CENTER'),
+        ('ALIGN',         (1,1), (1,-1),  'LEFT'),
+        ('ALIGN',         (2,1), (4,-1),  'CENTER'),
+        ('ALIGN',         (5,1), (5,-1),  'CENTER'),
+        ('BOX',           (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('INNERGRID',     (0,0), (-1,-1), 0.3, colors.HexColor('#E2E8F0')),
+        ('LEFTPADDING',   (0,0), (-1,-1), 4),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 4),
+    ]
+
+    current_product = None
+    row_num = 0
+    data_row_index = 1  # header is index 0
+
+    for entry in history_qs:
+        # Group header row per product
+        if entry.product != current_product:
+            current_product = entry.product
+            data.append([f"▶  {entry.product.name}  —  {entry.product.company_name or '—'}", "", "", "", "", ""])
+            row_styles.append(('BACKGROUND', (0, data_row_index), (-1, data_row_index), colors.HexColor('#EEF2FF')))
+            row_styles.append(('TEXTCOLOR',  (0, data_row_index), (-1, data_row_index), colors.HexColor('#4F46E5')))
+            row_styles.append(('FONTNAME',   (0, data_row_index), (-1, data_row_index), 'Helvetica-Bold'))
+            row_styles.append(('SPAN',       (0, data_row_index), (-1, data_row_index)))
+            data_row_index += 1
+
+        row_num += 1
+        qty_str = f"+{entry.qty_added}" if entry.qty_added > 0 else str(entry.qty_added)
+        data.append([
+            str(row_num),
+            entry.product.name[:28],
+            entry.date_entered.strftime("%d %b %Y"),
+            qty_str,
+            f"{entry.qty_after} units",
+            timezone.localtime(entry.recorded_at).strftime("%d %b %y %I:%M %p"),
+        ])
+        if entry.qty_added > 0:
+            row_styles.append(('TEXTCOLOR',  (3, data_row_index), (3, data_row_index), colors.HexColor('#065F46')))
+            row_styles.append(('BACKGROUND', (3, data_row_index), (3, data_row_index), colors.HexColor('#D1FAE5')))
+        else:
+            row_styles.append(('TEXTCOLOR',  (3, data_row_index), (3, data_row_index), colors.HexColor('#991B1B')))
+            row_styles.append(('BACKGROUND', (3, data_row_index), (3, data_row_index), colors.HexColor('#FEE2E2')))
+        if row_num % 2 == 0:
+            row_styles.append(('BACKGROUND', (0, data_row_index), (2, data_row_index), colors.HexColor('#F8FAFC')))
+            row_styles.append(('BACKGROUND', (4, data_row_index), (5, data_row_index), colors.HexColor('#F8FAFC')))
+        data_row_index += 1
+
+    if len(data) == 1:
+        data.append(["", "No stock history records found.", "", "", "", ""])
+
+    tbl = Table(data, colWidths=col_widths_pdf, repeatRows=1)
+    tbl.setStyle(TableStyle(row_styles))
+    elements.append(tbl)
+
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="all_stock_history_{timezone.localdate()}.pdf"'
     return response

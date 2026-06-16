@@ -1,0 +1,541 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Dashboard | Rukmini ERP{% endblock %}
+{% block header_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    /* Premium Dashboard Styles */
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Filters Card */
+    .glass-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .filter-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-form {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .filter-input {
+        background: var(--bg-app);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+
+    .filter-input:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* Metrics Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+    }
+
+    .stat-card {
+        position: relative;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+
+    .stat-card.sales::before { background: linear-gradient(to bottom, #10b981, #059669); }
+    .stat-card.due::before { background: linear-gradient(to bottom, #f59e0b, #d97706); }
+    .stat-card.expenditure::before { background: linear-gradient(to bottom, #6366f1, #4f46e5); }
+
+    .stat-info h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin: 0 0 8px 0;
+        font-weight: 700;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+        margin-bottom: 6px;
+    }
+
+    .stat-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card.sales .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .stat-card.due .stat-icon { background: rgba(245, 158, 128, 0.1); color: #f59e0b; }
+    .stat-card.expenditure .stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    /* Charts & Table Grid */
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+        .dashboard-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .chart-container-box {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .table-container-box {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .box-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .box-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Modern Table Customizations */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .custom-table th {
+        background: var(--bg-app);
+        padding: 12px 16px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        text-align: left;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .custom-table td {
+        padding: 14px 16px;
+        font-size: 14px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-main);
+    }
+
+    .custom-table tr:hover {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
+    /* Badges */
+    .val-badge {
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .val-badge.sales { color: #10b981; }
+    .val-badge.due { color: #ef4444; }
+    .val-badge.exp { color: #6366f1; }
+    .val-badge.net-pos { color: #10b981; font-weight: 700; }
+    .val-badge.net-neg { color: #ef4444; font-weight: 700; }
+</style>
+
+<div class="dashboard-container">
+
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div class="page-title-group">
+            <h1>My Dashboard</h1>
+            <p>Review sales performance, outstanding dues, and inventory expenditure details.</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <a href="{% url 'user_dashboard_excel' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-secondary" style="background: #10b981; color: white; border: none; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-file-excel"></i> Export Excel
+            </a>
+            <a href="{% url 'user_dashboard_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-secondary" style="background: #ef4444; color: white; border: none; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-file-pdf"></i> Export PDF
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filter Bar -->
+    <div class="glass-card">
+        <div class="filter-title">
+            <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i>
+            <span>Select Date Range</span>
+        </div>
+        <form class="filter-form" method="GET" action="">
+            <div class="filter-group">
+                <label for="start_date">From:</label>
+                <input type="date" id="start_date" name="start_date" class="filter-input" value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="filter-group">
+                <label for="end_date">To:</label>
+                <input type="date" id="end_date" name="end_date" class="filter-input" value="{{ end_date|date:'Y-m-d' }}">
+            </div>
+            <button type="submit" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-filter"></i> Apply Filter
+            </button>
+        </form>
+    </div>
+
+    <!-- Summary Statistics Grid -->
+    <div class="stats-grid">
+        <!-- Sales -->
+        <div class="stat-card sales">
+            <div class="stat-info">
+                <h3>Total Sales Done</h3>
+                <div class="stat-value">₹{{ total_sales|floatformat:2 }}</div>
+                <div class="stat-desc">Revenue from counter bills</div>
+            </div>
+            <div class="stat-icon">
+                <i class="fa-solid fa-cart-shopping"></i>
+            </div>
+        </div>
+
+        <!-- Amount Due -->
+        <div class="stat-card due">
+            <div class="stat-info">
+                <h3>Amount Outstanding (Due)</h3>
+                <div class="stat-value" style="color: {% if total_due > 0 %}#f59e0b{% else %}var(--text-main){% endif %};">₹{{ total_due|floatformat:2 }}</div>
+                <div class="stat-desc">Dues yet to be collected</div>
+            </div>
+            <div class="stat-icon">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+        </div>
+
+        <!-- Expenditure -->
+        <div class="stat-card expenditure">
+            <div class="stat-info">
+                <h3>Total Expenditure</h3>
+                <div class="stat-value">₹{{ total_expenditure|floatformat:2 }}</div>
+                <div class="stat-desc">Cost of inventory / stock entry</div>
+            </div>
+            <div class="stat-icon">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dual Column Layout for Chart and Table -->
+    <div class="dashboard-layout">
+        <!-- Sales & Expenditure Trend Chart -->
+        <div class="chart-container-box">
+            <div class="box-header">
+                <div class="box-title">
+                    <i class="fa-solid fa-chart-area" style="color: var(--primary);"></i>
+                    <span>Performance Trend Overview</span>
+                </div>
+            </div>
+            <div style="position: relative; min-height: 340px;">
+                <canvas id="userTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Daily Breakdown Table -->
+        <div class="table-container-box">
+            <div class="box-header">
+                <div class="box-title">
+                    <i class="fa-solid fa-list-check" style="color: var(--primary);"></i>
+                    <span>Daily Ledger Summary</span>
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th style="text-align: right;">Sales</th>
+                            <th style="text-align: right;">Dues</th>
+                            <th style="text-align: right;">Expense</th>
+                            <th style="text-align: right;">Net</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in daily_data %}
+                        <tr>
+                            <td style="font-weight: 600; font-size: 13px;">{{ day.display_date }}</td>
+                            <td style="text-align: right;" class="val-badge sales">₹{{ day.sales|floatformat:2 }}</td>
+                            <td style="text-align: right;" class="val-badge due">₹{{ day.due|floatformat:2 }}</td>
+                            <td style="text-align: right;" class="val-badge exp">₹{{ day.expenditure|floatformat:2 }}</td>
+                            <td style="text-align: right; font-weight: 700; color: {% if day.net >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+                                ₹{{ day.net|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                                No records found in the selected range.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Pass Django template values safely to JavaScript -->
+<div id="chartConfigData" 
+     data-labels='{{ chart_labels|safe }}' 
+     data-sales='{{ chart_sales|safe }}' 
+     data-due='{{ chart_due|safe }}' 
+     data-exp='{{ chart_exp|safe }}'
+     style="display: none;"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function() {
+        const configElem = document.getElementById('chartConfigData');
+        if (!configElem) return;
+
+        const labels = JSON.parse(configElem.getAttribute('data-labels') || '[]');
+        const salesData = JSON.parse(configElem.getAttribute('data-sales') || '[]');
+        const dueData = JSON.parse(configElem.getAttribute('data-due') || '[]');
+        const expData = JSON.parse(configElem.getAttribute('data-exp') || '[]');
+
+        const ctx = document.getElementById('userTrendChart').getContext('2d');
+        
+        // Define gradients for premium aesthetics
+        const salesGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        salesGradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+        salesGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        const expGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        expGradient.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+        expGradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+        const dueGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        dueGradient.addColorStop(0, 'rgba(245, 158, 11, 0.25)');
+        dueGradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Sales done',
+                        data: salesData,
+                        borderColor: '#10b981',
+                        borderWidth: 3,
+                        backgroundColor: salesGradient,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#ffffff',
+                        pointHoverRadius: 6,
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Amount Due',
+                        data: dueData,
+                        borderColor: '#f59e0b',
+                        borderWidth: 2,
+                        backgroundColor: dueGradient,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#ffffff',
+                        pointHoverRadius: 6,
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Expenditure',
+                        data: expData,
+                        borderColor: '#6366f1',
+                        borderWidth: 2.5,
+                        backgroundColor: expGradient,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: '#ffffff',
+                        pointHoverRadius: 6,
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: 'var(--text-main, #374151)',
+                            font: {
+                                family: 'var(--font-body, system-ui)',
+                                weight: '600',
+                                size: 12
+                            },
+                            usePointStyle: true,
+                            padding: 16
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'var(--bg-card, #ffffff)',
+                        titleColor: 'var(--text-main, #111827)',
+                        bodyColor: 'var(--text-muted, #4b5563)',
+                        borderColor: 'var(--border-color, #e5e7eb)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 8,
+                        boxPadding: 6,
+                        usePointStyle: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: 'var(--text-muted, #6b7280)',
+                            font: {
+                                family: 'var(--font-body, system-ui)',
+                                size: 11
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'var(--border-color, #f3f4f6)'
+                        },
+                        ticks: {
+                            color: 'var(--text-muted, #6b7280)',
+                            font: {
+                                family: 'var(--font-body, system-ui)',
+                                size: 11
+                            },
+                            callback: function(value) {
+                                return '₹' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    })();
+</script>
+{% endblock %}

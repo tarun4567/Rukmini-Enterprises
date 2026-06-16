@@ -33,9 +33,21 @@
                         <input type="text" name="customer_name" class="form-control" placeholder="e.g. Walking Customer" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Customer Address</label>
-                        <input type="text" name="customer_address" class="form-control" placeholder="Address (Optional)">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="customer_phone" id="customer_phone" class="form-control"
+                               placeholder="e.g. 9876543210"
+                               maxlength="10" minlength="10"
+                               pattern="[0-9]{10}"
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
+                               title="Enter exactly 10 digit phone number">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                            <i class="fa-solid fa-circle-info"></i> Numbers only &middot; exactly 10 digits
+                        </div>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Customer Address</label>
+                    <input type="text" name="customer_address" class="form-control" placeholder="Address (Optional)">
                 </div>
             </div>
         </div>
@@ -120,6 +132,68 @@
 <script id="productData" type="application/json">
 [{% for p in products %}{"id":"{{ p.id }}","name":"{{ p.name|escapejs }}","price":"{{ p.selling_price }}","stock":{{ p.stock_quantity }}}{% if not forloop.last %},{% endif %}{% endfor %}]
 </script>
+
+<style>
+.prod-search-wrap { position: relative; min-width: 220px; }
+.prod-search-input {
+    width: 100%; box-sizing: border-box;
+    padding: 7px 32px 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+.prod-search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.prod-search-arrow {
+    position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 11px; pointer-events: none;
+}
+.prod-dropdown {
+    display: none;
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+    z-index: 999;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.prod-dropdown.open { display: block; }
+.prod-dropdown-search {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky; top: 0; background: var(--bg-card); z-index: 1;
+}
+.prod-dropdown-search input {
+    width: 100%; box-sizing: border-box;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-app);
+    color: var(--text-primary);
+    font-size: 12px; outline: none;
+}
+.prod-dropdown-search input:focus { border-color: var(--primary); }
+.prod-option {
+    padding: 9px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.12s;
+}
+.prod-option:hover, .prod-option.active { background: var(--primary-light); color: var(--primary); }
+.prod-option .prod-opt-name { font-weight: 600; }
+.prod-option .prod-opt-meta { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.prod-option.out-of-stock { opacity: 0.45; cursor: not-allowed; }
+.prod-no-result { padding: 14px; text-align: center; font-size: 13px; color: var(--text-muted); }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -132,26 +206,34 @@
 
     let rowCount = 0;
 
-    function buildOptions(selectedId) {
-        return products.map(p =>
-            `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}"
-             ${p.id == selectedId ? 'selected' : ''}>
-             ${p.name} (Stock: ${p.stock})
-             </option>`
-        ).join('');
-    }
-
     function addRow(pid, qty, rate) {
         rowCount++;
         const rid = 'row_' + rowCount;
         const tr = document.createElement('tr');
         tr.id = rid;
+
+        // Find pre-selected product if pid given
+        const preSel = pid ? products.find(p => p.id == pid) : null;
+
         tr.innerHTML = `
             <td>
-                <select name="product_id[]" class="form-control prod-select" required style="font-size:13px;">
-                    <option value="">-- Choose Product --</option>
-                    ${buildOptions(pid || '')}
-                </select>
+                <div class="prod-search-wrap">
+                    <!-- Hidden real input for form submission -->
+                    <input type="hidden" name="product_id[]" class="prod-id-input" value="${preSel ? preSel.id : ''}" data-stock="${preSel ? preSel.stock : 0}" data-name="${preSel ? preSel.name : ''}">
+                    <!-- Visible trigger showing selected name -->
+                    <input type="text" class="prod-search-input form-control"
+                           placeholder="🔍 Search product..."
+                           value="${preSel ? preSel.name + ' (Stock: ' + preSel.stock + ')' : ''}"
+                           readonly style="cursor:pointer;">
+                    <i class="fa-solid fa-chevron-down prod-search-arrow"></i>
+                    <!-- Dropdown panel -->
+                    <div class="prod-dropdown">
+                        <div class="prod-dropdown-search">
+                            <input type="text" placeholder="Type to search..." class="prod-filter-input" autocomplete="off">
+                        </div>
+                        <div class="prod-list"></div>
+                    </div>
+                </div>
             </td>
             <td style="text-align:center;">
                 <input type="number" name="quantity[]" class="form-control qty-input"
@@ -159,7 +241,7 @@
             </td>
             <td style="text-align:right;">
                 <input type="number" name="rate[]" class="form-control rate-input"
-                       value="${rate ? parseFloat(rate).toFixed(2) : '0.00'}" step="0.01" min="0" required
+                       value="${rate ? parseFloat(rate).toFixed(2) : (preSel ? parseFloat(preSel.price).toFixed(2) : '0.00')}" step="0.01" min="0" required
                        style="text-align:right; width:110px; margin-left:auto;">
             </td>
             <td style="text-align:right; font-weight:700; color:var(--primary); padding-right:16px;">
@@ -174,34 +256,66 @@
             </td>`;
         itemsBody.appendChild(tr);
 
-        const select   = tr.querySelector('.prod-select');
-        const qtyInput = tr.querySelector('.qty-input');
-        const rateInput = tr.querySelector('.rate-input');
+        const hiddenId   = tr.querySelector('.prod-id-input');
+        const trigger    = tr.querySelector('.prod-search-input');
+        const dropdown   = tr.querySelector('.prod-dropdown');
+        const filterInp  = tr.querySelector('.prod-filter-input');
+        const prodList   = tr.querySelector('.prod-list');
+        const qtyInput   = tr.querySelector('.qty-input');
+        const rateInput  = tr.querySelector('.rate-input');
 
-        // Auto-fill rate on product select
-        select.addEventListener('change', () => {
-            const opt = select.options[select.selectedIndex];
-            if (opt && opt.value) {
-                rateInput.value = parseFloat(opt.getAttribute('data-price') || 0).toFixed(2);
-            } else {
-                rateInput.value = '0.00';
+        // Build product list items
+        function buildList(query) {
+            prodList.innerHTML = '';
+            const q = query.toLowerCase().trim();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(q));
+            if (!filtered.length) {
+                prodList.innerHTML = '<div class="prod-no-result">No products found</div>';
+                return;
             }
-            recalc();
+            filtered.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'prod-option' + (p.stock <= 0 ? ' out-of-stock' : '');
+                div.innerHTML = `<span class="prod-opt-name">${p.name}</span>
+                                 <span class="prod-opt-meta">₹${parseFloat(p.price).toFixed(2)} &nbsp;|&nbsp; Stock: ${p.stock}</span>`;
+                div.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (p.stock <= 0) return;
+                    // Set hidden id and trigger display
+                    hiddenId.value = p.id;
+                    hiddenId.setAttribute('data-stock', p.stock);
+                    hiddenId.setAttribute('data-name', p.name);
+                    trigger.value  = p.name + ' (Stock: ' + p.stock + ')';
+                    rateInput.value = parseFloat(p.price).toFixed(2);
+                    closeDropdown();
+                    recalc();
+                });
+                prodList.appendChild(div);
+            });
+        }
+
+        function openDropdown() {
+            buildList('');
+            filterInp.value = '';
+            dropdown.classList.add('open');
+            setTimeout(() => filterInp.focus(), 50);
+        }
+        function closeDropdown() { dropdown.classList.remove('open'); }
+
+        trigger.addEventListener('click', () => {
+            dropdown.classList.contains('open') ? closeDropdown() : openDropdown();
+        });
+        filterInp.addEventListener('input', () => buildList(filterInp.value));
+
+        // Close when clicking outside
+        document.addEventListener('mousedown', (e) => {
+            if (!tr.contains(e.target)) closeDropdown();
         });
 
         qtyInput.addEventListener('input', recalc);
         rateInput.addEventListener('input', recalc);
+        tr.querySelector('.remove-row-btn').addEventListener('click', () => { tr.remove(); recalc(); });
 
-        tr.querySelector('.remove-row-btn').addEventListener('click', () => {
-            tr.remove();
-            recalc();
-        });
-
-        // Trigger price fill if editing an existing selection
-        if (pid) {
-            const opt = select.options[select.selectedIndex];
-            if (opt && !rate) rateInput.value = parseFloat(opt.getAttribute('data-price') || 0).toFixed(2);
-        }
         recalc();
     }
 
@@ -222,11 +336,8 @@
         document.getElementById('summaryTotal').textContent = grand.toFixed(2);
         document.getElementById('summaryItems').textContent = itemCount;
 
-        // Auto-fill amount given if 0 or less than grand total
-        const given = parseFloat(amountGivenInput.value || 0);
-        if (given === 0 || given < grand) {
-            amountGivenInput.value = grand.toFixed(2);
-        }
+        // Always keep Amount Given in sync with the grand total
+        amountGivenInput.value = grand.toFixed(2);
         updateChange();
     }
 
@@ -265,16 +376,18 @@
         }
         let valid = true;
         rows.forEach((row, i) => {
-            const sel   = row.querySelector('.prod-select');
+            const hiddenIdInput = row.querySelector('.prod-id-input');
             const qty   = parseInt(row.querySelector('.qty-input')?.value || 0);
-            const stock = parseInt(sel?.options[sel.selectedIndex]?.getAttribute('data-stock') || 0);
-            const name  = sel?.options[sel.selectedIndex]?.text || '';
-            if (!sel?.value) {
+            if (!hiddenIdInput || !hiddenIdInput.value) {
                 alert(`Row ${i+1}: Please select a product.`);
                 valid = false;
-            } else if (qty > stock) {
-                alert(`"${name.split('(')[0].trim()}": Requested ${qty} but only ${stock} in stock.`);
-                valid = false;
+            } else {
+                const stock = parseInt(hiddenIdInput.getAttribute('data-stock') || 0);
+                const name  = hiddenIdInput.getAttribute('data-name') || '';
+                if (qty > stock) {
+                    alert(`"${name}": Requested ${qty} but only ${stock} in stock.`);
+                    valid = false;
+                }
             }
         });
         if (!valid) e.preventDefault();

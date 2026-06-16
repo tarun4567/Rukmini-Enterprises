@@ -124,7 +124,7 @@
                     <thead>
                         <tr>
                             <th>Product</th>
-                            <th>SKU</th>
+                            <th>Company</th>
                             <th>In Stock</th>
                             <th>Min Level</th>
                             <th>Action</th>
@@ -134,7 +134,7 @@
                         {% for product in low_stock_products %}
                         <tr>
                             <td><strong>{{ product.name }}</strong></td>
-                            <td><code>{{ product.sku }}</code></td>
+                            <td style="font-size:12px; color:var(--text-muted);">{{ product.company_name|default:"—" }}</td>
                             <td><span class="badge danger">{{ product.stock_quantity }}</span></td>
                             <td>{{ product.min_stock_level }}</td>
                             <td>

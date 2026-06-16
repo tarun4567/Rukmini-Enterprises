@@ -46,6 +46,12 @@
                     <span>Revenue Report</span>
                 </a>
             </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'admin_expenses' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'admin_expenses' %}active{% endif %}">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Expenses Ledger</span>
+                </a>
+            </li>
             {% else %}
             <li class="sidebar-menu-item">
                 <a href="{% url 'billing' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing' %}active{% endif %}">

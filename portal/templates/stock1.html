@@ -35,7 +35,7 @@
 <div class="filter-bar">
     <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" class="form-control" placeholder="Search by name, SKU or company..." data-search-table="stock1Table">
+        <input type="text" class="form-control" placeholder="Search by name or company..." data-search-table="stock1Table">
     </div>
 </div>
 
@@ -77,7 +77,7 @@
                             </div>
                         </td>
                         <td><strong>{{ product.company_name|default:"General" }}</strong></td>
-                        <td><span style="font-size: 13px; color: var(--text-muted);">{{ product.stock_entered|default:"Not Logged" }}</span></td>
+                        <td><span style="font-size: 13px; color: var(--text-muted);">{{ product.stock_entered|date:"d M Y"|default:"Not Logged" }}</span></td>
                         <td><strong>₹{{ product.selling_price }}</strong></td>
                         <td>
                             <strong style="font-size: 15px;">{{ product.stock_quantity }}</strong>
