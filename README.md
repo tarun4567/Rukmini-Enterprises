@@ -40,7 +40,7 @@ Welcome to the **Rukmini Enterprises ERP** system. This is a comprehensive, web-
 - **Database**: SQLite (default configuration)
 - **PDF Generation**: ReportLab
 - **Excel Spreadsheet Handling**: OpenPyXL
-- **Frontend**: Responsive HTML5, Vanilla CSS, Django Template Engine
+- **Frontend**: Responsive HTML5, CSS, Django Template Engine
 
 ---
 
