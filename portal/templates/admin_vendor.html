@@ -10,10 +10,10 @@
         <p>Track vendor credit records, pay outstanding balances, and check repayment schedules.</p>
     </div>
     <div style="display: flex; gap: 10px;">
-        <a href="{% url 'vendor_report_excel' %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
+        <a href="{% url 'vendor_report_excel' %}{% if search_query %}?search={{ search_query|urlencode }}{% endif %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
             <i class="fa-solid fa-file-excel" style="color: #16a34a;"></i> Download Excel
         </a>
-        <a href="{% url 'vendor_report_pdf' %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
+        <a href="{% url 'vendor_report_pdf' %}{% if search_query %}?search={{ search_query|urlencode }}{% endif %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
             <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Download PDF
         </a>
     </div>
@@ -133,11 +133,26 @@
 <!-- Vendor Ledger Table Card -->
 <div class="card" style="margin: 0;">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div class="card-title"><i class="fa-solid fa-list-check"></i> Outstanding Vendor Credit Ledger</div>
-        <div style="position: relative; width: 280px;">
-            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
-            <input type="text" class="form-control" placeholder="Search by name, company, item..." data-search-table="vendorLedgerTable" style="padding-left: 32px; height: 36px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); width: 100%;">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-list-check"></i> Outstanding Vendor Credit Ledger
+            {% if search_query %}
+            <span style="font-size: 12px; font-weight: 600; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px;">
+                Filtered: "{{ search_query }}"
+            </span>
+            {% endif %}
         </div>
+        <form method="GET" style="display: flex; gap: 8px; align-items: center; margin: 0; flex-wrap: wrap;">
+            <div style="position: relative; width: 280px;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+                <input type="text" name="search" class="form-control" placeholder="Search company or product..." value="{{ search_query|default:'' }}" style="padding-left: 32px; height: 36px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); width: 100%;">
+            </div>
+            {% if search_query %}
+            <a href="?" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px; height: 36px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Clear
+            </a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary" style="height: 36px; font-size: 13px; font-weight: 700; padding: 0 14px; background: var(--primary); border-color: var(--primary);">Search</button>
+        </form>
     </div>
     <div class="card-body" style="padding: 0;">
         <div class="table-responsive">

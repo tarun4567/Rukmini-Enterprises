@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
-from django.db.models import F, Sum
+from django.db.models import F, Sum, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from functools import wraps
@@ -1108,9 +1108,15 @@ def vendor_view(request):
                     messages.error(request, "Invalid payment amount entered.")
 
     # All products with outstanding vendor due
+    search_query = request.GET.get('search', '').strip()
     outstanding_vendors = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
-    ).order_by('vendor_due_date', 'company_name')
+    )
+    if search_query:
+        outstanding_vendors = outstanding_vendors.filter(
+            Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
+        )
+    outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
 
     # Repayments due within 3 days (warning pop-up trigger list)
     upcoming_dues = Product.objects.filter(
@@ -1143,6 +1149,7 @@ def vendor_view(request):
         'overdue_dues': overdue_dues,
         'payment_history': payment_history,
         'filter_company': filter_company,
+        'search_query': search_query,
         'today': today,
         'total_remaining': total_remaining,
         'total_paid_active': total_paid_active,
@@ -1155,9 +1162,15 @@ def vendor_view(request):
 # ── Vendor Report: Excel Download (Admin Only) ───────────────
 @admin_required
 def vendor_report_excel(request):
+    search_query = request.GET.get('search', '').strip()
     outstanding_vendors = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
-    ).order_by('vendor_due_date', 'company_name')
+    )
+    if search_query:
+        outstanding_vendors = outstanding_vendors.filter(
+            Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
+        )
+    outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -1222,9 +1235,15 @@ def vendor_report_excel(request):
 # ── Vendor Report: PDF Download (Admin Only) ─────────────────
 @admin_required
 def vendor_report_pdf(request):
+    search_query = request.GET.get('search', '').strip()
     outstanding_vendors = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
-    ).order_by('vendor_due_date', 'company_name')
+    )
+    if search_query:
+        outstanding_vendors = outstanding_vendors.filter(
+            Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
+        )
+    outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
