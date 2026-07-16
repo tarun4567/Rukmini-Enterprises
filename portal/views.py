@@ -723,10 +723,7 @@ def billing_records_view(request):
     date_str = request.GET.get('date')
     query_date = timezone.localdate()
     
-    # If the logged-in user is 'gst', force the query date to be today only
-    if request.user.username == 'gst':
-        query_date = timezone.localdate()
-    elif date_str:
+    if date_str:
         try:
             query_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:

@@ -8,7 +8,7 @@ class GstRestrictedMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated and request.user.username == 'gst':
-            allowed_url_names = ['billing_records', 'logout', 'login']
+            allowed_url_names = ['billing_records', 'logout', 'login', 'single_bill_pdf']
             try:
                 resolver_match = resolve(request.path_info)
                 url_name = resolver_match.url_name
