@@ -22,37 +22,64 @@
         </div>
         <ul class="sidebar-menu">
             {% if user.is_staff or user.is_superuser %}
+                {% if request.user.username == 'gst' %}
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'billing_records' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing_records' %}active{% endif %}">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>Today's Records</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'dashboard' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'stock_add' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock_add' or request.resolver_match.url_name == 'stock_edit' %}active{% endif %}">
+                        <i class="fa-solid fa-circle-plus"></i>
+                        <span>Stock</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'stock1' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock1' %}active{% endif %}">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>Stock 1</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'admin_expenses' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'admin_expenses' %}active{% endif %}">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>Expenses Ledger</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'billing_records' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing_records' %}active{% endif %}">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>Today's Records</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'admin_vendor' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'admin_vendor' %}active{% endif %}">
+                        <i class="fa-solid fa-handshake"></i>
+                        <span>Vendor Payments</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'stock_ledger' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock_ledger' %}active{% endif %}">
+                        <i class="fa-solid fa-list-ol"></i>
+                        <span>Stock Ledger</span>
+                    </a>
+                </li>
+                {% endif %}
+            {% else %}
             <li class="sidebar-menu-item">
-                <a href="{% url 'dashboard' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <a href="{% url 'user_dashboard' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}">
                     <i class="fa-solid fa-chart-pie"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
-            <li class="sidebar-menu-item">
-                <a href="{% url 'stock_add' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock_add' or request.resolver_match.url_name == 'stock_edit' %}active{% endif %}">
-                    <i class="fa-solid fa-circle-plus"></i>
-                    <span>Stock</span>
-                </a>
-            </li>
-            <li class="sidebar-menu-item">
-                <a href="{% url 'stock1' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stock1' %}active{% endif %}">
-                    <i class="fa-solid fa-boxes-stacked"></i>
-                    <span>Stock 1</span>
-                </a>
-            </li>
-            <li class="sidebar-menu-item">
-                <a href="{% url 'revenue_report' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'revenue_report' %}active{% endif %}">
-                    <i class="fa-solid fa-wallet"></i>
-                    <span>Revenue Report</span>
-                </a>
-            </li>
-            <li class="sidebar-menu-item">
-                <a href="{% url 'admin_expenses' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'admin_expenses' %}active{% endif %}">
-                    <i class="fa-solid fa-file-invoice-dollar"></i>
-                    <span>Expenses Ledger</span>
-                </a>
-            </li>
-            {% else %}
             <li class="sidebar-menu-item">
                 <a href="{% url 'billing' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'billing' %}active{% endif %}">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
@@ -69,6 +96,12 @@
                 <a href="{% url 'stocks' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'stocks' %}active{% endif %}">
                     <i class="fa-solid fa-boxes-stacked"></i>
                     <span>Stock Levels</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a href="{% url 'user_expenses' %}" class="sidebar-menu-link {% if request.resolver_match.url_name == 'user_expenses' %}active{% endif %}">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Expenses Ledger</span>
                 </a>
             </li>
             {% endif %}

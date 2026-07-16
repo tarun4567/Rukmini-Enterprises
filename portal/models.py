@@ -34,6 +34,14 @@ class Product(models.Model):
     company_name = models.CharField(max_length=200, blank=True, null=True)
     stock_entered = models.DateField(blank=True, null=True)
     initial_quantity = models.IntegerField(default=0)
+    size = models.CharField(max_length=50, blank=True, null=True, default='')
+
+    # Vendor related fields
+    total_vendor_amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    vendor_cost = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    amount_paid_to_vendor = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    remaining_amount_to_vendor = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    vendor_due_date = models.DateField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # 1. Assign Default Category if not set
@@ -71,6 +79,13 @@ class Product(models.Model):
     def total_purchase_value(self):
         return self.stock_quantity * self.purchase_price
 
+    @property
+    def oldest_batch_selling_price(self):
+        oldest_active_batch = self.batches.filter(current_qty__gt=0).order_by('created_at').first()
+        if oldest_active_batch:
+            return oldest_active_batch.selling_price
+        return self.selling_price
+
 
 class Bill(models.Model):
     customer_name    = models.CharField(max_length=150, verbose_name="Customer Name")
@@ -79,6 +94,7 @@ class Bill(models.Model):
     grand_total      = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_given     = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Amount Given")
     amount_to_be_given = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Amount to be Given")
+    payment_mode     = models.CharField(max_length=10, choices=[('CASH', 'Cash'), ('ONLINE', 'Online / Card')], default='CASH')
     created_at       = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -87,6 +103,18 @@ class Bill(models.Model):
     @property
     def abs_amount_to_be_given(self):
         return abs(self.amount_to_be_given)
+
+    @property
+    def gst_amount(self):
+        return float(self.grand_total) * 0.18
+
+    @property
+    def grand_total_with_gst(self):
+        return float(self.grand_total) * 1.18
+
+    @property
+    def amount_given_with_gst(self):
+        return float(self.amount_given) * 1.18
 
     # ── Legacy compatibility properties (for views/templates that still reference these) ──
     @property
@@ -137,4 +165,52 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"Expense of ₹{self.amount} to {self.company_name} on {self.date_paid}"
+
+
+class VendorPaymentHistory(models.Model):
+    product       = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="vendor_payments")
+    amount_paid   = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_date  = models.DateField(default=timezone.localdate)
+    description   = models.TextField(blank=True, null=True)
+    recorded_by   = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Payment of ₹{self.amount_paid} to {self.product.company_name or self.product.name} on {self.payment_date}"
+
+
+class ProductBatch(models.Model):
+    product       = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="batches")
+    batch_number  = models.CharField(max_length=100, blank=True, null=True)
+    purchase_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    selling_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    initial_qty   = models.IntegerField(default=0)
+    current_qty   = models.IntegerField(default=0)
+    stock_entered = models.DateField(default=timezone.localdate)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']  # FIFO: Oldest batches first
+
+    def __str__(self):
+        return f"Batch of {self.product.name} | Qty: {self.current_qty}/{self.initial_qty} | Rate: {self.purchase_rate}"
+
+    @property
+    def sold_qty(self):
+        return self.initial_qty - self.current_qty
+
+
+class BatchSale(models.Model):
+    bill_item     = models.ForeignKey(BillItem, on_delete=models.CASCADE, related_name="batch_sales")
+    batch         = models.ForeignKey(ProductBatch, on_delete=models.CASCADE, related_name="sales")
+    quantity_sold = models.IntegerField()
+    purchase_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Sale from Batch {self.batch.id}: {self.quantity_sold} units of {self.batch.product.name}"
+
 

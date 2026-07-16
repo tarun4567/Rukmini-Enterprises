@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+
+{% block title %}Vendor Payments | Rukmini ERP{% endblock %}
+{% block header_title %}Vendor Manager{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div class="page-title-group">
+        <h1>Vendor Repayments Manager</h1>
+        <p>Track vendor credit records, pay outstanding balances, and check repayment schedules.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'vendor_report_excel' %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
+            <i class="fa-solid fa-file-excel" style="color: #16a34a;"></i> Download Excel
+        </a>
+        <a href="{% url 'vendor_report_pdf' %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
+            <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Download PDF
+        </a>
+    </div>
+</div>
+
+{% if upcoming_dues or overdue_dues %}
+<!-- Repayment Alert/Pop-up Overlay -->
+<div id="vendorRepayModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 9999; animation: fadeIn 0.25s ease;">
+    <div style="background: var(--bg-card); width: 100%; max-width: 600px; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg); overflow: hidden; transform: scale(1.0); transition: transform 0.2s ease;">
+        <div style="background: #f59e0b; color: #ffffff; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 20px;"></i>
+                <span style="font-weight: 700; font-size: 16px;">Critical Vendor Dues Repayment Warning</span>
+            </div>
+            <button type="button" onclick="closeVendorModal()" style="background: none; border: none; color: #ffffff; cursor: pointer; font-size: 18px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div style="padding: 24px; max-height: 400px; overflow-y: auto;">
+            <p style="font-size: 14px; line-height: 1.5; color: var(--text-main); margin-bottom: 16px;">
+                The following vendor payments are either <strong>due within the next 3 days</strong> or are <strong>already overdue</strong>. Please review and arrange repayment:
+            </p>
+            
+            {% if overdue_dues %}
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--danger-text); margin-bottom: 10px; font-weight: 700;">Overdue Payments</h3>
+                {% for p in overdue_dues %}
+                <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: #991b1b;">{{ p.company_name|default:p.name }}</div>
+                        <div style="font-size: 12px; color: #7f1d1d; margin-top: 2px;">Overdue Since: {{ p.vendor_due_date|date:"d M Y" }}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 800; font-size: 15px; color: #991b1b;">₹{{ p.remaining_amount_to_vendor|floatformat:2 }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if upcoming_dues %}
+            <div>
+                <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #b45309; margin-bottom: 10px; font-weight: 700;">Due Within 3 Days</h3>
+                {% for p in upcoming_dues %}
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: #92400e;">{{ p.company_name|default:p.name }}</div>
+                        <div style="font-size: 12px; color: #b45309; margin-top: 2px;">Due Date: {{ p.vendor_due_date|date:"d M Y" }}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 800; font-size: 15px; color: #b45309;">₹{{ p.remaining_amount_to_vendor|floatformat:2 }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div style="background: var(--bg-app); border-top: 1px solid var(--border-color); padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="button" class="btn btn-secondary" onclick="closeVendorModal()" style="height: 38px; font-weight: 600;">Dismiss</button>
+            <button type="button" class="btn btn-primary" onclick="closeVendorModal()" style="height: 38px; font-weight: 700; background: #d97706; border-color: #d97706;">Acknowledge</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Summary Statistics Grid -->
+<div class="stats-grid">
+    <!-- Total Remaining Due -->
+    <div class="stat-card due">
+        <div class="stat-info">
+            <h3>Total Outstanding Dues</h3>
+            <div class="stat-value" style="color: var(--danger-text);">₹{{ total_remaining|floatformat:2 }}</div>
+            <div class="stat-desc">Remaining credit to pay</div>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+    </div>
+
+    <!-- Paid (Active Accounts) -->
+    <div class="stat-card sales">
+        <div class="stat-info">
+            <h3>Paid (Active Accounts)</h3>
+            <div class="stat-value" style="color: var(--success-text);">₹{{ total_paid_active|floatformat:2 }}</div>
+            <div class="stat-desc">Repayments on active accounts</div>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+    </div>
+
+    <!-- Total Paid (All Vendors) -->
+    <div class="stat-card paid-all">
+        <div class="stat-info">
+            <h3>Total Paid (All Vendors)</h3>
+            <div class="stat-value" style="color: #06b6d4;">₹{{ total_paid_all|floatformat:2 }}</div>
+            <div class="stat-desc">All-time payments to all vendors</div>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+        </div>
+    </div>
+
+    <!-- Active Vendor Accounts -->
+    <div class="stat-card active-vendors">
+        <div class="stat-info">
+            <h3>Active Vendor Accounts</h3>
+            <div class="stat-value" style="color: var(--primary);">{{ outstanding_count }}</div>
+            <div class="stat-desc">Distinct credit accounts</div>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-truck"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Vendor Ledger Table Card -->
+<div class="card" style="margin: 0;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div class="card-title"><i class="fa-solid fa-list-check"></i> Outstanding Vendor Credit Ledger</div>
+        <div style="position: relative; width: 280px;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+            <input type="text" class="form-control" placeholder="Search by name, company, item..." data-search-table="vendorLedgerTable" style="padding-left: 32px; height: 36px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); width: 100%;">
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table id="vendorLedgerTable" class="table" style="margin: 0;">
+                <thead>
+                    <tr>
+                        <th style="padding: 12px 16px; width: 60px;">#</th>
+                        <th style="padding: 12px 16px;">Vendor / Company</th>
+                        <th style="padding: 12px 16px;">Stock Item</th>
+                        <th style="padding: 12px 16px; text-align: right;">Amount Paid</th>
+                        <th style="padding: 12px 16px; text-align: right;">Remaining Due</th>
+                        <th style="padding: 12px 16px; text-align: center;">Due Date</th>
+                        <th style="padding: 12px 16px; text-align: center; width: 220px;">Repay Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in outstanding_vendors %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 14px 16px; color: var(--text-muted);">{{ forloop.counter }}</td>
+                        <td style="padding: 14px 16px;">
+                            <a href="?filter_company={{ p.company_name|urlencode }}" 
+                               style="font-weight: 700; color: var(--primary); text-decoration: none; cursor: pointer;"
+                               title="Click to view repayment history for this vendor">
+                                {{ p.company_name|default:"—" }}
+                            </a>
+                        </td>
+                        <td style="padding: 14px 16px;">
+                            <div style="font-weight: 600; color: var(--text-main);">{{ p.name }}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Recd: {{ p.stock_entered|date:"d M Y"|default:"—" }}</div>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--success-text);">₹{{ p.amount_paid_to_vendor|floatformat:2 }}</td>
+                        <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: var(--danger-text);">₹{{ p.remaining_amount_to_vendor|floatformat:2 }}</td>
+                        <td style="padding: 14px 16px; text-align: center;">
+                            <form method="POST" style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_due_date">
+                                <input type="hidden" name="product_id" value="{{ p.id }}">
+                                <input type="date" name="vendor_due_date" value="{{ p.vendor_due_date|date:'Y-m-d'|default:'' }}"
+                                       class="form-control"
+                                       style="width: 125px; height: 32px; font-size: 12px; padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);"
+                                       onchange="this.form.submit()">
+                            </form>
+                        </td>
+                        <td style="padding: 14px 16px;">
+                            <form method="POST" style="margin: 0; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                                {% csrf_token %}
+                                <input type="hidden" name="product_id" value="{{ p.id }}">
+                                <div style="position: relative; display: flex; align-items: center; width: 100px;">
+                                    <span style="position: absolute; left: 8px; font-size: 12px; color: var(--text-muted); font-weight: 600;">₹</span>
+                                    <input type="number" name="pay_amount" step="0.01" min="0.01" 
+                                           max="{{ p.remaining_amount_to_vendor|stringformat:'.2f' }}"
+                                           placeholder="0.00" class="form-control"
+                                           style="width: 100%; height: 38px; padding: 4px 6px 4px 18px; font-size: 12px; border-radius: var(--radius-sm); box-sizing: border-box;" required>
+                                </div>
+                                <input type="text" name="description" placeholder="Notes / Description (Optional)" class="form-control"
+                                       style="width: 180px; height: 38px; font-size: 12px; padding: 6px 10px; border-radius: var(--radius-sm); box-sizing: border-box; text-align: left;">
+                                <button type="submit" class="btn btn-primary btn-sm" style="height: 38px; padding: 0 14px; font-size: 12px; font-weight: 700; background: var(--success); border-color: var(--success);">
+                                    Pay Vendor
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                            <i class="fa-solid fa-circle-check" style="font-size: 38px; color: var(--success); margin-bottom: 12px; display: block;"></i>
+                            No outstanding vendor balances detected.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <i class="fa-solid fa-clock-rotate-left"></i> Vendor Repayment Logs (History)
+            {% if filter_company %}
+            <span style="font-size: 12px; font-weight: 600; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px;">
+                Filtered: {{ filter_company }}
+            </span>
+            {% endif %}
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="position: relative; width: 250px;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+                <input type="text" class="form-control" placeholder="Search history..." data-search-table="vendorLogsTable" style="padding-left: 32px; height: 36px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); width: 100%;">
+            </div>
+            {% if filter_company %}
+            <a href="?" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px; height: 36px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Clear Filter
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table id="vendorLogsTable" class="table" style="margin: 0;">
+                <thead>
+                    <tr>
+                        <th style="padding: 12px 16px; width: 60px;">#</th>
+                        <th style="padding: 12px 16px;">Vendor / Company</th>
+                        <th style="padding: 12px 16px;">Product / Stock Item</th>
+                        <th style="padding: 12px 16px; text-align: right;">Amount Paid</th>
+                        <th style="padding: 12px 16px; text-align: center;">Payment Date</th>
+                        <th style="padding: 12px 16px;">Notes / Description</th>
+                        <th style="padding: 12px 16px; text-align: center;">Recorded By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in payment_history %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 14px 16px; color: var(--text-muted);">{{ forloop.counter }}</td>
+                        <td style="padding: 14px 16px;">
+                            <div style="font-weight: 700; color: var(--text-main);">{{ h.product.company_name|default:"—" }}</div>
+                        </td>
+                        <td style="padding: 14px 16px;">
+                            <div style="font-weight: 600; color: var(--text-main);">{{ h.product.name }}</div>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: var(--success-text);">₹{{ h.amount_paid|floatformat:2 }}</td>
+                        <td style="padding: 14px 16px; text-align: center; color: var(--text-main); font-weight: 600;">
+                            {{ h.payment_date|date:"d M Y" }}
+                        </td>
+                        <td style="padding: 14px 16px; color: var(--text-muted); font-size: 13px; max-width: 160px; word-wrap: break-word; white-space: normal;">
+                            {{ h.description|default:"—" }}
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center; color: var(--text-muted);">
+                            {{ h.recorded_by.username|default:"System" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                            No repayments logged yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function closeVendorModal() {
+        const modal = document.getElementById('vendorRepayModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Automatically dismiss modal warning after 5 seconds
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(closeVendorModal, 5000);
+    });
+</script>
+
+<style>
+/* Metrics Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.stat-card.due::before { background: linear-gradient(to bottom, #ef4444, #b91c1c); }
+.stat-card.sales::before { background: linear-gradient(to bottom, #10b981, #059669); }
+.stat-card.paid-all::before { background: linear-gradient(to bottom, #06b6d4, #0891b2); }
+.stat-card.active-vendors::before { background: linear-gradient(to bottom, #6366f1, #4f46e5); }
+
+.stat-info h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.stat-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.stat-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    transition: all 0.3s ease;
+}
+
+.stat-card.due .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.stat-card.sales .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.stat-card.paid-all .stat-icon { background: rgba(6, 182, 212, 0.1); color: #06b6d4; }
+.stat-card.active-vendors .stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+
+.stat-card:hover .stat-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+</style>
+{% endblock %}

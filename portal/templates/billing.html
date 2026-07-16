@@ -16,11 +16,10 @@
 
 <form method="POST" id="billingForm">
 {% csrf_token %}
-<div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+<div style="display: flex; flex-direction: column; gap: 24px;">
 
     <!-- LEFT: Customer + Items -->
     <div style="display: flex; flex-direction: column; gap: 20px;">
-
         <!-- Customer Info -->
         <div class="card">
             <div class="card-header">
@@ -53,15 +52,15 @@
         </div>
 
         <!-- Product Items Table -->
-        <div class="card">
+        <div class="card" style="overflow: visible;">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <div class="card-title"><i class="fa-solid fa-boxes-stacked"></i> Product Items</div>
                 <button type="button" id="addItemBtn" class="btn btn-secondary btn-sm" style="font-weight: 600; gap: 6px; display: flex; align-items: center;">
                     <i class="fa-solid fa-plus"></i> Add Item
                 </button>
             </div>
-            <div class="card-body" style="padding: 0;">
-                <div class="table-responsive">
+            <div class="card-body" style="padding: 0; overflow: visible;">
+                <div class="table-responsive" style="overflow: visible;">
                     <table class="table" id="itemsTable" style="margin: 0;">
                         <thead>
                             <tr>
@@ -92,7 +91,7 @@
     </div>
 
     <!-- RIGHT: Payment Panel -->
-    <div class="card" style="position: sticky; top: 80px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title"><i class="fa-solid fa-indian-rupee-sign"></i> Payment Summary</div>
         </div>
@@ -114,6 +113,20 @@
                        style="font-size: 18px; font-weight: 700; text-align: right;">
             </div>
 
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label">Payment Mode *</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <label style="flex: 1; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; background: var(--bg-app); color: var(--text-main); transition: all 0.15s ease; user-select: none;">
+                        <input type="radio" name="payment_mode" value="CASH" checked style="accent-color: var(--primary); margin: 0;">
+                        <i class="fa-solid fa-money-bill-1-wave" style="color: #16a34a; font-size: 14px;"></i> Cash
+                    </label>
+                    <label style="flex: 1; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; background: var(--bg-app); color: var(--text-main); transition: all 0.15s ease; user-select: none;">
+                        <input type="radio" name="payment_mode" value="ONLINE" style="accent-color: var(--primary); margin: 0;">
+                        <i class="fa-solid fa-credit-card" style="color: var(--primary); font-size: 14px;"></i> Online / Card
+                    </label>
+                </div>
+            </div>
+
             <div id="changeBox" style="border-radius: var(--radius-sm); padding: 14px 16px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                 <span id="changeLabel" style="font-weight: 600; font-size: 13px;">Change to Return</span>
                 <span id="changeValue" style="font-weight: 700; font-size: 18px;">₹0.00</span>
@@ -130,11 +143,11 @@
 
 <!-- Hidden product data for JS -->
 <script id="productData" type="application/json">
-[{% for p in products %}{"id":"{{ p.id }}","name":"{{ p.name|escapejs }}","price":"{{ p.selling_price }}","stock":{{ p.stock_quantity }}}{% if not forloop.last %},{% endif %}{% endfor %}]
+{{ active_batches_json|safe }}
 </script>
 
 <style>
-.prod-search-wrap { position: relative; min-width: 220px; }
+.prod-search-wrap { position: relative; min-width: 220px; display: flex; flex-direction: column; }
 .prod-search-input {
     width: 100%; box-sizing: border-box;
     padding: 7px 32px 7px 10px;
@@ -144,40 +157,36 @@
     color: var(--text-primary);
     font-size: 13px;
     outline: none;
-    cursor: pointer;
+    cursor: text;
 }
-.prod-search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.prod-search-wrap.open-select .prod-search-input {
+    border-color: var(--primary);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
 .prod-search-arrow {
     position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
     color: var(--text-muted); font-size: 11px; pointer-events: none;
 }
 .prod-dropdown {
     display: none;
-    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+    border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     box-shadow: 0 8px 24px rgba(0,0,0,0.13);
     z-index: 999;
     max-height: 240px;
     overflow-y: auto;
 }
+.prod-search-wrap.open-select .prod-dropdown {
+    border-color: var(--primary);
+}
 .prod-dropdown.open { display: block; }
-.prod-dropdown-search {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border-color);
-    position: sticky; top: 0; background: var(--bg-card); z-index: 1;
-}
-.prod-dropdown-search input {
-    width: 100%; box-sizing: border-box;
-    padding: 6px 10px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    background: var(--bg-app);
-    color: var(--text-primary);
-    font-size: 12px; outline: none;
-}
-.prod-dropdown-search input:focus { border-color: var(--primary); }
 .prod-option {
     padding: 9px 14px;
     cursor: pointer;
@@ -218,26 +227,23 @@
         tr.innerHTML = `
             <td>
                 <div class="prod-search-wrap">
-                    <!-- Hidden real input for form submission -->
-                    <input type="hidden" name="product_id[]" class="prod-id-input" value="${preSel ? preSel.id : ''}" data-stock="${preSel ? preSel.stock : 0}" data-name="${preSel ? preSel.name : ''}">
-                    <!-- Visible trigger showing selected name -->
+                    <!-- Hidden real input for form submission (Batch ID) -->
+                    <input type="hidden" name="batch_id[]" class="prod-id-input" value="${preSel ? preSel.batch_id : ''}" data-stock="${preSel ? preSel.stock : 0}" data-name="${preSel ? preSel.name : ''}" data-size="${preSel && preSel.size ? preSel.size : ''}" data-batch-date="${preSel ? preSel.batch_date : ''}">
+                    <!-- Visible input for searching and showing selected name -->
                     <input type="text" class="prod-search-input form-control"
-                           placeholder="🔍 Search product..."
-                           value="${preSel ? preSel.name + ' (Stock: ' + preSel.stock + ')' : ''}"
-                           readonly style="cursor:pointer;">
+                           placeholder="🔍 Search batch..."
+                           value="${preSel ? preSel.name + (preSel.size ? ' (' + preSel.size + ')' : '') + ' (Batch: ' + preSel.batch_date + ', Stock: ' + preSel.stock + ')' : ''}"
+                           autocomplete="off">
                     <i class="fa-solid fa-chevron-down prod-search-arrow"></i>
                     <!-- Dropdown panel -->
                     <div class="prod-dropdown">
-                        <div class="prod-dropdown-search">
-                            <input type="text" placeholder="Type to search..." class="prod-filter-input" autocomplete="off">
-                        </div>
                         <div class="prod-list"></div>
                     </div>
                 </div>
             </td>
             <td style="text-align:center;">
                 <input type="number" name="quantity[]" class="form-control qty-input"
-                       value="${qty || 1}" min="1" required style="text-align:center; width:70px; margin:auto;">
+                       value="${qty || 1}" min="1" max="${preSel ? preSel.stock : 99999}" required style="text-align:center; width:70px; margin:auto;">
             </td>
             <td style="text-align:right;">
                 <input type="number" name="rate[]" class="form-control rate-input"
@@ -259,34 +265,44 @@
         const hiddenId   = tr.querySelector('.prod-id-input');
         const trigger    = tr.querySelector('.prod-search-input');
         const dropdown   = tr.querySelector('.prod-dropdown');
-        const filterInp  = tr.querySelector('.prod-filter-input');
         const prodList   = tr.querySelector('.prod-list');
         const qtyInput   = tr.querySelector('.qty-input');
         const rateInput  = tr.querySelector('.rate-input');
 
-        // Build product list items
+        // Build product batch list items
         function buildList(query) {
             prodList.innerHTML = '';
             const q = query.toLowerCase().trim();
-            const filtered = products.filter(p => p.name.toLowerCase().includes(q));
+            if (q === '') {
+                prodList.innerHTML = '<div class="prod-no-result" style="font-size:12px; color:var(--text-muted);">Type to search by product or company...</div>';
+                return;
+            }
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(q) || 
+                (p.company && p.company.toLowerCase().includes(q))
+            );
             if (!filtered.length) {
-                prodList.innerHTML = '<div class="prod-no-result">No products found</div>';
+                prodList.innerHTML = '<div class="prod-no-result">No active batches found</div>';
                 return;
             }
             filtered.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'prod-option' + (p.stock <= 0 ? ' out-of-stock' : '');
-                div.innerHTML = `<span class="prod-opt-name">${p.name}</span>
-                                 <span class="prod-opt-meta">₹${parseFloat(p.price).toFixed(2)} &nbsp;|&nbsp; Stock: ${p.stock}</span>`;
+                div.innerHTML = `<span class="prod-opt-name">${p.name}${p.size ? ' (' + p.size + ')' : ''}</span>
+                                 <span class="prod-opt-meta">₹${parseFloat(p.price).toFixed(2)} &nbsp;|&nbsp; Batch: ${p.batch_date} &nbsp;|&nbsp; Stock: ${p.stock}</span>`;
                 div.addEventListener('mousedown', (e) => {
                     e.preventDefault();
                     if (p.stock <= 0) return;
                     // Set hidden id and trigger display
-                    hiddenId.value = p.id;
+                    hiddenId.value = p.batch_id;
                     hiddenId.setAttribute('data-stock', p.stock);
                     hiddenId.setAttribute('data-name', p.name);
-                    trigger.value  = p.name + ' (Stock: ' + p.stock + ')';
+                    hiddenId.setAttribute('data-size', p.size || '');
+                    hiddenId.setAttribute('data-batch-date', p.batch_date);
+                    trigger.value  = p.name + (p.size ? ' (' + p.size + ')' : '') + ' (Batch: ' + p.batch_date + ', Stock: ' + p.stock + ')';
                     rateInput.value = parseFloat(p.price).toFixed(2);
+                    qtyInput.setAttribute('max', p.stock);
+                    qtyInput.value = 1;
                     closeDropdown();
                     recalc();
                 });
@@ -295,24 +311,45 @@
         }
 
         function openDropdown() {
-            buildList('');
-            filterInp.value = '';
+            buildList(trigger.value.includes(' (Batch:') ? '' : trigger.value);
             dropdown.classList.add('open');
-            setTimeout(() => filterInp.focus(), 50);
+            tr.querySelector('.prod-search-wrap').classList.add('open-select');
         }
-        function closeDropdown() { dropdown.classList.remove('open'); }
+        function closeDropdown() {
+            dropdown.classList.remove('open');
+            tr.querySelector('.prod-search-wrap').classList.remove('open-select');
+            const currentName = hiddenId.getAttribute('data-name');
+            const currentStock = hiddenId.getAttribute('data-stock');
+            const currentSize = hiddenId.getAttribute('data-size');
+            const currentBatchDate = hiddenId.getAttribute('data-batch-date');
+            if (hiddenId.value && currentName) {
+                trigger.value = currentName + (currentSize ? ' (' + currentSize + ')' : '') + ' (Batch: ' + currentBatchDate + ', Stock: ' + currentStock + ')';
+            } else {
+                trigger.value = '';
+            }
+        }
 
-        trigger.addEventListener('click', () => {
-            dropdown.classList.contains('open') ? closeDropdown() : openDropdown();
+        trigger.addEventListener('focus', openDropdown);
+        trigger.addEventListener('click', openDropdown);
+        trigger.addEventListener('input', () => {
+            hiddenId.value = '';
+            buildList(trigger.value);
         });
-        filterInp.addEventListener('input', () => buildList(filterInp.value));
 
         // Close when clicking outside
         document.addEventListener('mousedown', (e) => {
             if (!tr.contains(e.target)) closeDropdown();
         });
 
-        qtyInput.addEventListener('input', recalc);
+        qtyInput.addEventListener('input', () => {
+            const stock = parseInt(hiddenId.getAttribute('data-stock') || 99999);
+            const val = parseInt(qtyInput.value || 0);
+            if (val > stock) {
+                alert(`Cannot exceed available batch stock of ${stock} units.`);
+                qtyInput.value = stock;
+            }
+            recalc();
+        });
         rateInput.addEventListener('input', recalc);
         tr.querySelector('.remove-row-btn').addEventListener('click', () => { tr.remove(); recalc(); });
 
@@ -379,13 +416,14 @@
             const hiddenIdInput = row.querySelector('.prod-id-input');
             const qty   = parseInt(row.querySelector('.qty-input')?.value || 0);
             if (!hiddenIdInput || !hiddenIdInput.value) {
-                alert(`Row ${i+1}: Please select a product.`);
+                alert(`Row ${i+1}: Please select a stock batch.`);
                 valid = false;
             } else {
                 const stock = parseInt(hiddenIdInput.getAttribute('data-stock') || 0);
                 const name  = hiddenIdInput.getAttribute('data-name') || '';
+                const batchDate = hiddenIdInput.getAttribute('data-batch-date') || '';
                 if (qty > stock) {
-                    alert(`"${name}": Requested ${qty} but only ${stock} in stock.`);
+                    alert(`"${name} (Batch: ${batchDate})": Requested ${qty} but only ${stock} available in this batch.`);
                     valid = false;
                 }
             }

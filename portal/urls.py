@@ -14,12 +14,16 @@ urlpatterns = [
 
     path('stocks/', views.stocks_view, name='stocks'),
     path('billing/', views.billing_view, name='billing'),
+    path('billing/dashboard/', views.user_dashboard_view, name='user_dashboard'),
+    path('billing/expenses/', views.user_expenses_view, name='user_expenses'),
+    path('billing/bill/<int:pk>/pdf/', views.single_bill_pdf, name='single_bill_pdf'),
     path('billing/records/', views.billing_records_view, name='billing_records'),
     path('billing/dashboard/download/excel/', views.user_dashboard_excel, name='user_dashboard_excel'),
     path('billing/dashboard/download/pdf/',   views.user_dashboard_pdf,   name='user_dashboard_pdf'),
     path('billing/clear-due/<int:pk>/', views.clear_due_view, name='clear_due'),
     path('billing/report/', views.revenue_report_view, name='revenue_report'),
     path('billing/expenses-ledger/', views.admin_expenses_view, name='admin_expenses'),
+    path('stock/ledger/', views.stock_ledger_view, name='stock_ledger'),
 
     # Download endpoints
     path('billing/report/download/excel/', views.revenue_report_excel, name='revenue_report_excel'),
@@ -34,4 +38,9 @@ urlpatterns = [
     # All Stock History download (all products)
     path('stock/history/all/excel/', views.stock_all_history_excel, name='stock_all_history_excel'),
     path('stock/history/all/pdf/',   views.stock_all_history_pdf,   name='stock_all_history_pdf'),
+
+    # Vendor payment/due list view
+    path('vendor/', views.vendor_view, name='admin_vendor'),
+    path('vendor/download/excel/', views.vendor_report_excel, name='vendor_report_excel'),
+    path('vendor/download/pdf/', views.vendor_report_pdf, name='vendor_report_pdf'),
 ]

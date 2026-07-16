@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Ledger | Rukmini ERP{% endblock %}
+{% block header_title %}Stock Ledger (FIFO){% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>Batch-Wise Stock Ledger (FIFO)</h1>
+        <p>Audit trail of all product stock inflows (purchases/batches) and outflows (sales) chronologically.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div class="card-title"><i class="fa-solid fa-list-ol"></i> Transaction Records</div>
+        <div class="search-box" style="max-width: 300px; width: 100%;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="ledgerSearch" class="form-control" placeholder="Search ledger..." onkeyup="filterLedgerTable()">
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table" id="ledgerTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Product Details</th>
+                        <th>Type</th>
+                        <th style="text-align: center;">Qty In (Purchased)</th>
+                        <th style="text-align: center;">Qty Out (Sold)</th>
+                        <th>Purchase Rate</th>
+                        <th style="text-align: center;">Remaining Batch Stock</th>
+                        <th style="text-align: right;">Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in transactions %}
+                    <tr>
+                        <td>
+                            <strong>{{ txn.date|date:"d M Y" }}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted);">{{ txn.time|date:"h:i A" }}</div>
+                        </td>
+                        <td>
+                            <strong>{{ txn.product }}</strong>
+                        </td>
+                        <td>
+                            {% if txn.type == 'Purchase' %}
+                                <span class="badge success" style="font-size: 12px; padding: 4px 10px;">
+                                    <i class="fa-solid fa-arrow-down"></i> Purchase (In)
+                                </span>
+                            {% else %}
+                                <span class="badge warning" style="font-size: 12px; padding: 4px 10px; background: rgba(59,130,246,0.1); color: rgb(59,130,246);">
+                                    <i class="fa-solid fa-arrow-up"></i> Sale (Out)
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            {% if txn.qty_in > 0 %}
+                                <strong style="font-size: 14px;">+{{ txn.qty_in }}</strong>
+                            {% else %}
+                                <span style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            {% if txn.qty_out > 0 %}
+                                <strong style="font-size: 14px; color: var(--danger);">-{{ txn.qty_out }}</strong>
+                            {% else %}
+                                <span style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>₹{{ txn.rate }}</strong>
+                        </td>
+                        <td style="text-align: center;">
+                            <strong style="font-size: 14px;">{{ txn.remaining_qty }}</strong>
+                            <span style="font-size: 11px; color: var(--text-muted);">units</span>
+                        </td>
+                        <td style="text-align: right; color: var(--text-muted); font-size: 12px;">
+                            <strong>{{ txn.ref }}</strong>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fa-solid fa-clipboard-list" style="font-size: 32px; display: block; margin-bottom: 10px;"></i>
+                            No ledger transactions recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function filterLedgerTable() {
+    const input = document.getElementById("ledgerSearch");
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById("ledgerTable");
+    const tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) {
+        let match = false;
+        const tds = tr[i].getElementsByTagName("td");
+        for (let j = 0; j < tds.length; j++) {
+            if (tds[j]) {
+                const textValue = tds[j].textContent || tds[j].innerText;
+                if (textValue.toLowerCase().indexOf(filter) > -1) {
+                    match = true;
+                    break;
+                }
+            }
+        }
+        if (match) {
+            tr[i].style.display = "";
+        } else {
+            tr[i].style.display = "none";
+        }
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}

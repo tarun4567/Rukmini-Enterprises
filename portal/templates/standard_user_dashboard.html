@@ -115,8 +115,8 @@
     }
 
     .stat-card.sales::before { background: linear-gradient(to bottom, #10b981, #059669); }
-    .stat-card.due::before { background: linear-gradient(to bottom, #f59e0b, #d97706); }
     .stat-card.expenditure::before { background: linear-gradient(to bottom, #6366f1, #4f46e5); }
+    .stat-card.due::before { background: linear-gradient(to bottom, #f59e0b, #d97706); }
 
     .stat-info h3 {
         font-size: 13px;
@@ -152,8 +152,8 @@
     }
 
     .stat-card.sales .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .stat-card.due .stat-icon { background: rgba(245, 158, 128, 0.1); color: #f59e0b; }
     .stat-card.expenditure .stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+    .stat-card.due .stat-icon { background: rgba(245, 158, 128, 0.1); color: #f59e0b; }
 
     .stat-card:hover .stat-icon {
         transform: scale(1.1) rotate(5deg);
@@ -250,7 +250,7 @@
     <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
         <div class="page-title-group">
             <h1>My Dashboard</h1>
-            <p>Review sales performance, outstanding dues, and inventory expenditure details.</p>
+            <p>Review sales done, expenses, and remaining balance details.</p>
         </div>
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <a href="{% url 'user_dashboard_excel' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-secondary" style="background: #10b981; color: white; border: none; display: flex; align-items: center; gap: 8px;">
@@ -284,52 +284,40 @@
     </div>
 
     <!-- Summary Statistics Grid -->
-    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-        <!-- Cash Sale -->
-        <div class="stat-card sales" style="background: var(--bg-card); border-left: 4px solid var(--success);">
+    <div class="stats-grid">
+        <!-- Sales -->
+        <div class="stat-card sales">
             <div class="stat-info">
-                <h3>Cash Sale</h3>
-                <div class="stat-value" style="color: var(--success-text);">₹{{ cash_sale|floatformat:2 }}</div>
-                <div class="stat-desc">Direct paid sales</div>
+                <h3>Total Sales Done</h3>
+                <div class="stat-value">₹{{ total_sales|floatformat:2 }}</div>
+                <div class="stat-desc">Revenue from counter bills</div>
             </div>
             <div class="stat-icon">
-                <i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i>
+                <i class="fa-solid fa-cart-shopping"></i>
             </div>
         </div>
 
-        <!-- Credit Sale -->
-        <div class="stat-card due" style="background: var(--bg-card); border-left: 4px solid #f59e0b;">
+        <!-- Total Expenses -->
+        <div class="stat-card expenditure">
             <div class="stat-info">
-                <h3>Credit Sale</h3>
-                <div class="stat-value" style="color: #d97706;">₹{{ credit_sale|floatformat:2 }}</div>
-                <div class="stat-desc">Amount Outstanding (Due)</div>
+                <h3>Total Expenses</h3>
+                <div class="stat-value">₹{{ total_expenditure|floatformat:2 }}</div>
+                <div class="stat-desc">Cost of inventory / manual expenses</div>
             </div>
             <div class="stat-icon">
-                <i class="fa-solid fa-clock-rotate-left" style="color: #f59e0b;"></i>
+                <i class="fa-solid fa-file-invoice-dollar"></i>
             </div>
         </div>
 
-        <!-- Total Sales -->
-        <div class="stat-card sales" style="background: var(--bg-card); border-left: 4px solid var(--primary);">
+        <!-- Remaining Balance -->
+        <div class="stat-card {% if remaining_balance >= 0 %}sales{% else %}due{% endif %}">
             <div class="stat-info">
-                <h3>Total Sales</h3>
-                <div class="stat-value" style="color: var(--primary);">₹{{ total_sales|floatformat:2 }}</div>
-                <div class="stat-desc">Cash + Credit Sales</div>
+                <h3>Remaining Balance</h3>
+                <div class="stat-value" style="color: {% if remaining_balance >= 0 %}#10b981{% else %}#ef4444{% endif %};">₹{{ remaining_balance|floatformat:2 }}</div>
+                <div class="stat-desc">Remaining cash (Sales minus Expenses)</div>
             </div>
-            <div class="stat-icon">
-                <i class="fa-solid fa-cart-shopping" style="color: var(--primary);"></i>
-            </div>
-        </div>
-
-        <!-- Total Expenditure -->
-        <div class="stat-card expenditure" style="background: var(--bg-card); border-left: 4px solid var(--danger-text);">
-            <div class="stat-info">
-                <h3>Total Expenditure</h3>
-                <div class="stat-value" style="color: var(--danger-text);">₹{{ total_expenditure|floatformat:2 }}</div>
-                <div class="stat-desc">Cost of inventory / logs</div>
-            </div>
-            <div class="stat-icon">
-                <i class="fa-solid fa-truck-ramp-box" style="color: var(--danger-text);"></i>
+            <div class="stat-icon" style="background: {% if remaining_balance >= 0 %}rgba(16, 185, 129, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %}; color: {% if remaining_balance >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+                <i class="fa-solid fa-scale-balanced"></i>
             </div>
         </div>
     </div>
@@ -363,9 +351,8 @@
                         <tr>
                             <th>Date</th>
                             <th style="text-align: right;">Sales</th>
-                            <th style="text-align: right;">Dues</th>
                             <th style="text-align: right;">Expense</th>
-                            <th style="text-align: right;">Net</th>
+                            <th style="text-align: right;">Net Balance</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -373,7 +360,6 @@
                         <tr>
                             <td style="font-weight: 600; font-size: 13px;">{{ day.display_date }}</td>
                             <td style="text-align: right;" class="val-badge sales">₹{{ day.sales|floatformat:2 }}</td>
-                            <td style="text-align: right;" class="val-badge due">₹{{ day.due|floatformat:2 }}</td>
                             <td style="text-align: right;" class="val-badge exp">₹{{ day.expenditure|floatformat:2 }}</td>
                             <td style="text-align: right; font-weight: 700; color: {% if day.net >= 0 %}#10b981{% else %}#ef4444{% endif %};">
                                 ₹{{ day.net|floatformat:2 }}
@@ -381,7 +367,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 32px;">
                                 No records found in the selected range.
                             </td>
                         </tr>
@@ -412,7 +398,6 @@
 
         const labels = JSON.parse(configElem.getAttribute('data-labels') || '[]');
         const salesData = JSON.parse(configElem.getAttribute('data-sales') || '[]');
-        const dueData = JSON.parse(configElem.getAttribute('data-due') || '[]');
         const expData = JSON.parse(configElem.getAttribute('data-exp') || '[]');
 
         const ctx = document.getElementById('userTrendChart').getContext('2d');
@@ -425,10 +410,6 @@
         const expGradient = ctx.createLinearGradient(0, 0, 0, 300);
         expGradient.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
         expGradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
-
-        const dueGradient = ctx.createLinearGradient(0, 0, 0, 300);
-        dueGradient.addColorStop(0, 'rgba(245, 158, 11, 0.25)');
-        dueGradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
 
         new Chart(ctx, {
             type: 'line',
@@ -449,20 +430,7 @@
                         pointRadius: 4
                     },
                     {
-                        label: 'Amount Due',
-                        data: dueData,
-                        borderColor: '#f59e0b',
-                        borderWidth: 2,
-                        backgroundColor: dueGradient,
-                        fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: '#f59e0b',
-                        pointBorderColor: '#ffffff',
-                        pointHoverRadius: 6,
-                        pointRadius: 4
-                    },
-                    {
-                        label: 'Expenditure',
+                        label: 'Expenses',
                         data: expData,
                         borderColor: '#6366f1',
                         borderWidth: 2.5,
