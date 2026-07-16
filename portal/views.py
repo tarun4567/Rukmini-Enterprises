@@ -217,188 +217,354 @@ def single_bill_pdf(request, pk):
     bill = get_object_or_404(Bill, pk=pk)
     
     buffer = io.BytesIO()
+    # Tighten margins to fit more content cleanly on A4
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=A4,
-        rightMargin=1.5*cm, 
-        leftMargin=1.5*cm,
-        topMargin=1.5*cm, 
-        bottomMargin=1.5*cm
+        rightMargin=1.2*cm, 
+        leftMargin=1.2*cm,
+        topMargin=1.2*cm, 
+        bottomMargin=1.2*cm
     )
     elements = []
 
-    # Styles
-    title_style = ParagraphStyle(
-        'billtitle', 
-        fontSize=18, 
+    # Get style sheet
+    styles = getSampleStyleSheet()
+
+    # Style definitions
+    company_style = ParagraphStyle(
+        'compname',
+        parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        textColor=colors.HexColor('#1E293B'), 
-        alignment=TA_CENTER, 
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor('#0F172A'),
+        spaceAfter=3
+    )
+    company_sub = ParagraphStyle(
+        'compsub',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#475569')
+    )
+    invoice_title_style = ParagraphStyle(
+        'invtitle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor('#1E293B'),
+        alignment=TA_RIGHT
+    )
+    invoice_sub_style = ParagraphStyle(
+        'invsub',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#475569'),
+        alignment=TA_RIGHT
+    )
+    section_heading = ParagraphStyle(
+        'sechead',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=9,
+        leading=12,
+        textColor=colors.HexColor('#0F172A'),
         spaceAfter=4
     )
-    subtitle_style = ParagraphStyle(
-        'billsub', 
-        fontSize=10, 
+    section_body = ParagraphStyle(
+        'secbody',
+        parent=styles['Normal'],
         fontName='Helvetica',
-        textColor=colors.HexColor('#64748B'), 
-        alignment=TA_CENTER, 
-        spaceAfter=15
-    )
-    meta_title = ParagraphStyle(
-        'metatitle', 
-        fontSize=9, 
-        fontName='Helvetica-Bold',
-        textColor=colors.HexColor('#1E293B')
-    )
-    meta_val = ParagraphStyle(
-        'metaval', 
-        fontSize=9, 
-        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
         textColor=colors.HexColor('#334155')
     )
-    header_style = ParagraphStyle(
-        'tblheader', 
-        fontSize=9, 
+    tbl_header = ParagraphStyle(
+        'tblhead',
+        parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        textColor=colors.white, 
-        alignment=TA_LEFT
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.white
     )
-    cell_style = ParagraphStyle(
-        'tblcell', 
-        fontSize=9, 
-        fontName='Helvetica',
-        textColor=colors.HexColor('#1E293B')
+    tbl_header_center = ParagraphStyle(
+        'tblheadcenter',
+        parent=tbl_header,
+        alignment=TA_CENTER
     )
-    cell_right = ParagraphStyle(
-        'tblcellright', 
-        fontSize=9, 
-        fontName='Helvetica',
-        textColor=colors.HexColor('#1E293B'), 
+    tbl_header_right = ParagraphStyle(
+        'tblheadright',
+        parent=tbl_header,
         alignment=TA_RIGHT
     )
-    cell_bold_right = ParagraphStyle(
-        'tblcellboldright', 
-        fontSize=9, 
+    tbl_cell = ParagraphStyle(
+        'tblcell',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor('#0F172A')
+    )
+    tbl_cell_center = ParagraphStyle(
+        'tblcellcenter',
+        parent=tbl_cell,
+        alignment=TA_CENTER
+    )
+    tbl_cell_right = ParagraphStyle(
+        'tblcellright',
+        parent=tbl_cell,
+        alignment=TA_RIGHT
+    )
+    totals_label_style = ParagraphStyle(
+        'totalslabel',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#475569'),
+        alignment=TA_RIGHT
+    )
+    totals_val_style = ParagraphStyle(
+        'totalsval',
+        parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        textColor=colors.HexColor('#1E293B'), 
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#0F172A'),
         alignment=TA_RIGHT
     )
 
-    # Header section
-    elements.append(Paragraph("RUKMINI ENTERPRISES", title_style))
-    elements.append(Paragraph("Retail Counter Bill / Tax Invoice", subtitle_style))
-    elements.append(Spacer(1, 0.2*cm))
-
-    # Meta Info block
+    # 1. Header Layout (Side-by-side Table)
     local_created_at = timezone.localtime(bill.created_at)
-    meta_data = [
+    date_str = local_created_at.strftime('%d %b %Y, %I:%M %p')
+    payment_mode_str = "Online / Card" if bill.payment_mode == 'ONLINE' else "Cash"
+    
+    header_left = [
+        Paragraph("RUKMINI ENTERPRISES", company_style),
+        Paragraph("Main Bazaar, Opp. City Plaza, New Delhi - 110001<br/>"
+                  "GSTIN: 07RUKMI9999A1Z1<br/>"
+                  "Email: contact@rukminierp.com | Phone: +91 98765 43210", company_sub)
+    ]
+    
+    header_right = [
+        Paragraph("TAX INVOICE", invoice_title_style),
+        Paragraph(f"<b>Invoice ID:</b> #{bill.id}<br/>"
+                  f"<b>Date & Time:</b> {date_str}<br/>"
+                  f"<b>Payment Mode:</b> {payment_mode_str}", invoice_sub_style)
+    ]
+    
+    header_table = Table([[header_left, header_right]], colWidths=[11.0*cm, 7.6*cm])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+    ]))
+    elements.append(header_table)
+
+    # 2. Horizontal Divider Line
+    divider = Table([['']], colWidths=[18.6*cm])
+    divider.setStyle(TableStyle([
+        ('LINEABOVE', (0,0), (-1,-1), 1.0, colors.HexColor('#CBD5E1')),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+    elements.append(divider)
+    elements.append(Spacer(1, 0.4*cm))
+
+    # 3. Bill To Section
+    bill_to_data = [
         [
-            Paragraph("Invoice ID:", meta_title), 
-            Paragraph(f"#{bill.id}", meta_val),
-            Paragraph("Customer Name:", meta_title), 
-            Paragraph(bill.customer_name, meta_val)
+            Paragraph("<b>BILL TO:</b>", section_heading),
+            Paragraph("", section_body)
         ],
         [
-            Paragraph("Date & Time:", meta_title), 
-            Paragraph(local_created_at.strftime('%d %b %Y, %I:%M %p'), meta_val),
-            Paragraph("Phone Number:", meta_title), 
-            Paragraph(bill.customer_phone or "—", meta_val)
+            Paragraph(f"<b>Customer Name:</b> {bill.customer_name}", section_body),
+            Paragraph(f"<b>Phone:</b> {bill.customer_phone or '—'}", section_body)
         ],
         [
-            Paragraph("Payment Mode:", meta_title), 
-            Paragraph("Online / Card" if bill.payment_mode == 'ONLINE' else "Cash", meta_val),
-            Paragraph("Address:", meta_title), 
-            Paragraph(bill.customer_address or "—", meta_val)
+            Paragraph(f"<b>Address:</b> {bill.customer_address or '—'}", section_body),
+            Paragraph("", section_body)
         ]
     ]
-    meta_widths = [2.5*cm, 5.5*cm, 3.0*cm, 7.0*cm]
-    meta_table = Table(meta_data, colWidths=meta_widths)
-    meta_table.setStyle(TableStyle([
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+    bill_to_table = Table(bill_to_data, colWidths=[9.3*cm, 9.3*cm])
+    bill_to_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
         ('PADDING', (0,0), (-1,-1), 8),
     ]))
-    elements.append(meta_table)
-    elements.append(Spacer(1, 0.6*cm))
+    elements.append(bill_to_table)
+    elements.append(Spacer(1, 0.5*cm))
 
-    # Items table header
+    # 4. Items Table
     table_data = [[
-        Paragraph("Sr", header_style),
-        Paragraph("Product Name", header_style),
-        Paragraph("Rate", header_style),
-        Paragraph("Qty", header_style),
-        Paragraph("Subtotal", header_style),
+        Paragraph("Sr.", tbl_header_center),
+        Paragraph("Product / Item Description", tbl_header),
+        Paragraph("Rate", tbl_header_right),
+        Paragraph("Qty", tbl_header_center),
+        Paragraph("Subtotal", tbl_header_right),
     ]]
-
-    # Items records
+    
     for i, item in enumerate(bill.items.select_related('product').all(), 1):
         prod_name = item.product.name if item.product else "Deleted Product"
         if item.product and item.product.size:
             prod_name += f" ({item.product.size})"
+            
         table_data.append([
-            Paragraph(str(i), cell_style),
-            Paragraph(prod_name, cell_style),
-            Paragraph(f"₹{item.rate:.2f}", cell_right),
-            Paragraph(str(item.quantity), cell_style),
-            Paragraph(f"₹{item.total:.2f}", cell_right),
+            Paragraph(str(i), tbl_cell_center),
+            Paragraph(prod_name, tbl_cell),
+            Paragraph(f"₹{item.rate:.2f}", tbl_cell_right),
+            Paragraph(str(item.quantity), tbl_cell_center),
+            Paragraph(f"₹{item.total:.2f}", tbl_cell_right),
         ])
-
-    # Column widths
-    col_widths = [1.0*cm, 8.0*cm, 3.0*cm, 2.0*cm, 4.0*cm]
+        
+    col_widths = [1.2*cm, 9.4*cm, 2.8*cm, 1.8*cm, 3.4*cm]  # Total width: 18.6cm
     items_table = Table(table_data, colWidths=col_widths)
-    items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2563EB')),
+    
+    t_style = [
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1E293B')), # Dark slate header
         ('ALIGN', (0,0), (-1,0), 'LEFT'),
-        ('ALIGN', (2,1), (2,-1), 'RIGHT'),
-        ('ALIGN', (3,1), (3,-1), 'CENTER'),
-        ('ALIGN', (4,1), (4,-1), 'RIGHT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('INNERGRID', (0,0), (-1,-1), 0.4, colors.HexColor('#E2E8F0')),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-    ]))
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('LINEBELOW', (0,0), (-1,0), 1.5, colors.HexColor('#0F172A')), 
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')), 
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+    ]
+    
+    # Alternate row colors
+    for r in range(1, len(table_data)):
+        if r % 2 == 0:
+            t_style.append(('BACKGROUND', (0, r), (-1, r), colors.HexColor('#F8FAFC')))
+            
+    items_table.setStyle(TableStyle(t_style))
     elements.append(items_table)
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.4*cm))
 
-    # Totals block
+    # 5. Totals Block (Structured right-aligned)
     if request.user.is_staff or request.user.is_superuser:
         totals_data = [
-            [Paragraph("Total Bill:", meta_title), Paragraph(f"₹{bill.grand_total:.2f}", cell_right)],
-            [Paragraph("GST (18%):", meta_title), Paragraph(f"₹{bill.gst_amount:.2f}", cell_right)],
-            [Paragraph("Total + GST:", meta_title), Paragraph(f"₹{bill.grand_total_with_gst:.2f}", cell_bold_right)],
-            [Paragraph("Amount Paid:", meta_title), Paragraph(f"₹{bill.grand_total_with_gst:.2f}", cell_right)]
+            [Paragraph("Total Bill Amount:", totals_label_style), Paragraph(f"₹{bill.grand_total:.2f}", totals_val_style)],
+            [Paragraph("GST (18%):", totals_label_style), Paragraph(f"₹{bill.gst_amount:.2f}", totals_val_style)],
+            [Paragraph("Total + GST:", totals_label_style), Paragraph(f"₹{bill.grand_total_with_gst:.2f}", totals_val_style)],
+            [Paragraph("Amount Paid:", totals_label_style), Paragraph(f"₹{bill.grand_total_with_gst:.2f}", totals_val_style)],
         ]
     else:
-        due_label = "Change" if bill.amount_to_be_given >= 0 else "Balance Due"
+        due_label = "Change Returned" if bill.amount_to_be_given >= 0 else "Balance Due"
         totals_data = [
-            [Paragraph("Grand Total:", meta_title), Paragraph(f"₹{bill.grand_total:.2f}", cell_bold_right)],
-            [Paragraph("Amount Paid:", meta_title), Paragraph(f"₹{bill.amount_given:.2f}", cell_right)],
-            [Paragraph(f"{due_label}:", meta_title), Paragraph(f"₹{bill.abs_amount_to_be_given:.2f}", cell_right)]
+            [Paragraph("Grand Total:", totals_label_style), Paragraph(f"₹{bill.grand_total:.2f}", totals_val_style)],
+            [Paragraph("Amount Paid:", totals_label_style), Paragraph(f"₹{bill.amount_given:.2f}", totals_val_style)],
+            [Paragraph(f"<b>{due_label}:</b>", totals_label_style), Paragraph(f"₹{bill.abs_amount_to_be_given:.2f}", totals_val_style)],
         ]
-    totals_widths = [14.0*cm, 4.0*cm]
-    totals_table = Table(totals_data, colWidths=totals_widths)
-    totals_table.setStyle(TableStyle([
+        
+    totals_col_widths = [4.2*cm, 2.8*cm]
+    totals_sub_table = Table(totals_data, colWidths=totals_col_widths)
+    totals_sub_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 4),
         ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('LINEABOVE', (1,0), (1,0), 0.5, colors.HexColor('#CBD5E1')),
+        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#F1F5F9')),
     ]))
-    elements.append(totals_table)
-    elements.append(Spacer(1, 1.0*cm))
+    
+    # Left side payment info block
+    payment_info_html = """
+    <b>Notes / Payment Info:</b><br/>
+    <font color="#475569">
+    • Please check the invoice details carefully.<br/>
+    • Payments processed securely via {mode}.<br/>
+    • Subject to Delhi Jurisdiction only.
+    </font>
+    """.format(mode="Cash" if bill.payment_mode == 'CASH' else "Digital Transaction")
+    
+    payment_info_style = ParagraphStyle(
+        'payinfo',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=7.5,
+        leading=11,
+        textColor=colors.HexColor('#475569')
+    )
+    payment_info_p = Paragraph(payment_info_html, payment_info_style)
+    
+    totals_container = Table([[payment_info_p, totals_sub_table]], colWidths=[11.6*cm, 7.0*cm])
+    totals_container.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+    ]))
+    elements.append(totals_container)
+    elements.append(Spacer(1, 0.8*cm))
 
-    # Thank you note
+    # 6. Terms and Signature Section
+    terms_heading_style = ParagraphStyle(
+        'termsh',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor('#0F172A'),
+        spaceAfter=2
+    )
+    terms_body_style = ParagraphStyle(
+        'termsb',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=7.5,
+        leading=10,
+        textColor=colors.HexColor('#64748B')
+    )
+    
+    terms_content = [
+        Paragraph("Terms & Conditions:", terms_heading_style),
+        Paragraph("1. Goods once sold will not be accepted for return or exchange.<br/>"
+                  "2. Interest @ 18% p.a. will be charged if payment is not made on due date.<br/>"
+                  "3. All disputes are subject to local court jurisdiction.", terms_body_style)
+    ]
+    
+    signature_style = ParagraphStyle(
+        'sigtext',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8,
+        leading=11,
+        textColor=colors.HexColor('#475569'),
+        alignment=TA_CENTER
+    )
+    
+    signature_content = [
+        Spacer(1, 0.8*cm),
+        Paragraph("___________________________", signature_style),
+        Spacer(1, 0.1*cm),
+        Paragraph("Authorized Signatory", signature_style)
+    ]
+    
+    footer_table = Table([[terms_content, signature_content]], colWidths=[11.6*cm, 7.0*cm])
+    footer_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 10),
+    ]))
+    elements.append(footer_table)
+    
     thank_you_style = ParagraphStyle(
         'thanks', 
-        fontSize=10, 
+        fontSize=9, 
         fontName='Helvetica-Oblique',
-        textColor=colors.HexColor('#64748B'), 
-        alignment=TA_CENTER
+        textColor=colors.HexColor('#94A3B8'), 
+        alignment=TA_CENTER,
+        spaceBefore=15
     )
     elements.append(Paragraph("Thank you for your business!", thank_you_style))
 
