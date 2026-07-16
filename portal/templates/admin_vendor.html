@@ -10,10 +10,10 @@
         <p>Track vendor credit records, pay outstanding balances, and check repayment schedules.</p>
     </div>
     <div style="display: flex; gap: 10px;">
-        <a href="{% url 'vendor_report_excel' %}{% if search_query %}?search={{ search_query|urlencode }}{% endif %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
+        <a href="{% url 'vendor_report_excel' %}?search={{ search_query|default:'' }}&start_date={{ start_date_str|default:'' }}&end_date={{ end_date_str|default:'' }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
             <i class="fa-solid fa-file-excel" style="color: #16a34a;"></i> Download Excel
         </a>
-        <a href="{% url 'vendor_report_pdf' %}{% if search_query %}?search={{ search_query|urlencode }}{% endif %}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
+        <a href="{% url 'vendor_report_pdf' %}?search={{ search_query|default:'' }}&start_date={{ start_date_str|default:'' }}&end_date={{ end_date_str|default:'' }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 600; height: 38px;">
             <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Download PDF
         </a>
     </div>
@@ -135,23 +135,36 @@
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-list-check"></i> Outstanding Vendor Credit Ledger
-            {% if search_query %}
+            {% if search_query or start_date_str or end_date_str %}
             <span style="font-size: 12px; font-weight: 600; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px;">
-                Filtered: "{{ search_query }}"
+                Filtered
             </span>
             {% endif %}
         </div>
-        <form method="GET" style="display: flex; gap: 8px; align-items: center; margin: 0; flex-wrap: wrap;">
-            <div style="position: relative; width: 280px;">
+        <form method="GET" style="display: flex; gap: 12px; align-items: center; margin: 0; flex-wrap: wrap;">
+            <!-- Search field -->
+            <div style="position: relative; width: 220px;">
                 <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
                 <input type="text" name="search" class="form-control" placeholder="Search company or product..." value="{{ search_query|default:'' }}" style="padding-left: 32px; height: 36px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); width: 100%;">
             </div>
-            {% if search_query %}
-            <a href="?" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px; height: 36px; display: flex; align-items: center; gap: 6px;">
+            <!-- Date From -->
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Due From:</span>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date_str|default:'' }}" style="height: 36px; font-size: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); padding: 4px 8px; width: 130px; background: var(--bg-card); color: var(--text-main);">
+            </div>
+            <!-- Date To -->
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Due To:</span>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date_str|default:'' }}" style="height: 36px; font-size: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); padding: 4px 8px; width: 130px; background: var(--bg-card); color: var(--text-main);">
+            </div>
+            {% if search_query or start_date_str or end_date_str %}
+            <a href="?" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px; height: 36px; display: flex; align-items: center; gap: 6px; font-weight: 600;">
                 <i class="fa-solid fa-arrow-rotate-left"></i> Clear
             </a>
             {% endif %}
-            <button type="submit" class="btn btn-primary" style="height: 36px; font-size: 13px; font-weight: 700; padding: 0 14px; background: var(--primary); border-color: var(--primary);">Search</button>
+            <button type="submit" class="btn btn-primary" style="height: 36px; font-size: 13px; font-weight: 700; padding: 0 14px; background: var(--primary); border-color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-filter"></i> Apply
+            </button>
         </form>
     </div>
     <div class="card-body" style="padding: 0;">

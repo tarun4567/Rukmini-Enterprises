@@ -1107,8 +1107,10 @@ def vendor_view(request):
                 except ValueError:
                     messages.error(request, "Invalid payment amount entered.")
 
-    # All products with outstanding vendor due
     search_query = request.GET.get('search', '').strip()
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+
     outstanding_vendors = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
     )
@@ -1116,6 +1118,18 @@ def vendor_view(request):
         outstanding_vendors = outstanding_vendors.filter(
             Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
         )
+    if start_date_str:
+        try:
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__gte=start_date)
+        except ValueError:
+            pass
+    if end_date_str:
+        try:
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__lte=end_date)
+        except ValueError:
+            pass
     outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
 
     # Repayments due within 3 days (warning pop-up trigger list)
@@ -1150,6 +1164,8 @@ def vendor_view(request):
         'payment_history': payment_history,
         'filter_company': filter_company,
         'search_query': search_query,
+        'start_date_str': start_date_str,
+        'end_date_str': end_date_str,
         'today': today,
         'total_remaining': total_remaining,
         'total_paid_active': total_paid_active,
@@ -1163,6 +1179,9 @@ def vendor_view(request):
 @admin_required
 def vendor_report_excel(request):
     search_query = request.GET.get('search', '').strip()
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+
     outstanding_vendors = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
     )
@@ -1170,6 +1189,18 @@ def vendor_report_excel(request):
         outstanding_vendors = outstanding_vendors.filter(
             Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
         )
+    if start_date_str:
+        try:
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__gte=start_date)
+        except ValueError:
+            pass
+    if end_date_str:
+        try:
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__lte=end_date)
+        except ValueError:
+            pass
     outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
 
     wb = openpyxl.Workbook()
@@ -1236,6 +1267,9 @@ def vendor_report_excel(request):
 @admin_required
 def vendor_report_pdf(request):
     search_query = request.GET.get('search', '').strip()
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+
     outstanding_vendors = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
     )
@@ -1243,6 +1277,18 @@ def vendor_report_pdf(request):
         outstanding_vendors = outstanding_vendors.filter(
             Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
         )
+    if start_date_str:
+        try:
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__gte=start_date)
+        except ValueError:
+            pass
+    if end_date_str:
+        try:
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__lte=end_date)
+        except ValueError:
+            pass
     outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
 
     buffer = io.BytesIO()
