@@ -476,27 +476,8 @@ def single_bill_pdf(request, pk):
         ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#F1F5F9')),
     ]))
     
-    # Left side payment info block
-    payment_info_html = """
-    <b>Notes / Payment Info:</b><br/>
-    <font color="#475569">
-    • Please check the invoice details carefully.<br/>
-    • Payments processed securely via {mode}.<br/>
-    • Subject to Delhi Jurisdiction only.
-    </font>
-    """.format(mode="Cash" if bill.payment_mode == 'CASH' else "Digital Transaction")
-    
-    payment_info_style = ParagraphStyle(
-        'payinfo',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=7.5,
-        leading=11,
-        textColor=colors.HexColor('#475569')
-    )
-    payment_info_p = Paragraph(payment_info_html, payment_info_style)
-    
-    totals_container = Table([[payment_info_p, totals_sub_table]], colWidths=[11.6*cm, 7.0*cm])
+    # Wrap totals in a container with a blank left cell to right-align it
+    totals_container = Table([['', totals_sub_table]], colWidths=[11.6*cm, 7.0*cm])
     totals_container.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
