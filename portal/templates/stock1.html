@@ -97,7 +97,7 @@
                 </div>
                 <div style="flex: 1; text-align: right;" class="product-qty" data-qty="{{ product.stock_quantity }}">
                     <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">Available Qty</div>
-                    <div style="font-size: 16px; font-weight: 800; color: {% if product.stock_quantity == 0 %}var(--danger-text){% elif product.is_low_stock %}var(--warning-text){% else %}var(--success-text){% endif %}; margin-top: 2px;">
+                    <div style="font-size: 16px; font-weight: 800; margin-top: 2px;" class="{% if product.stock_quantity == 0 %}text-danger-var{% elif product.is_low_stock %}text-warning-var{% else %}text-success-var{% endif %}">
                         {{ product.stock_quantity }}
                     </div>
                 </div>

@@ -1012,3 +1012,9 @@ textarea.form-control {
     font-weight: 600;
 }
 
+/* Utility Classes for Dynamic Colors to avoid inline style parser warnings */
+.text-success-var { color: var(--success-text) !important; }
+.text-warning-var { color: var(--warning-text) !important; }
+.text-danger-var { color: var(--danger-text) !important; }
+
+

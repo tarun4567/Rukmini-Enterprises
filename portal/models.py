@@ -89,7 +89,7 @@ class Product(models.Model):
 
 class Bill(models.Model):
     customer_name    = models.CharField(max_length=150, verbose_name="Customer Name")
-    customer_phone   = models.CharField(max_length=10, blank=True, null=True, verbose_name="Phone Number")
+    customer_phone   = models.CharField(max_length=30, blank=True, null=True, verbose_name="Phone Number")
     customer_address = models.TextField(blank=True, null=True, verbose_name="Customer Address")
     grand_total      = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_given     = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Amount Given")
@@ -116,7 +116,7 @@ class Bill(models.Model):
     def amount_given_with_gst(self):
         return float(self.amount_given) * 1.18
 
-    # ── Legacy compatibility properties (for views/templates that still reference these) ──
+    # -- Legacy compatibility properties (for views/templates that still reference these) --
     @property
     def total(self):
         return self.grand_total
@@ -164,7 +164,7 @@ class Expense(models.Model):
         ordering = ['-date_paid', '-created_at']
 
     def __str__(self):
-        return f"Expense of ₹{self.amount} to {self.company_name} on {self.date_paid}"
+        return f"Expense of \u20b9{self.amount} to {self.company_name} on {self.date_paid}"
 
 
 class VendorPaymentHistory(models.Model):
@@ -179,7 +179,7 @@ class VendorPaymentHistory(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Payment of ₹{self.amount_paid} to {self.product.company_name or self.product.name} on {self.payment_date}"
+        return f"Payment of \u20b9{self.amount_paid} to {self.product.company_name or self.product.name} on {self.payment_date}"
 
 
 class ProductBatch(models.Model):

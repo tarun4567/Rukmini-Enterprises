@@ -7,14 +7,15 @@
 <div class="page-header">
     <div class="page-title-group">
         {% if request.user.username == 'gst' %}
-            <h1>Today's Billing Audit (GST)</h1>
-            <p>Review and audit counter bills logged for today's date only.</p>
+        <h1>Today's Billing Audit (GST)</h1>
+        <p>Review and audit counter bills logged for today's date only.</p>
         {% else %}
-            <h1>Counter Billing Records</h1>
-            <p>Review and audit all counter bills logged for the selected session date.</p>
+        <h1>Counter Billing Records</h1>
+        <p>Review and audit all counter bills logged for the selected session date.</p>
         {% endif %}
     </div>
-    <div style="font-size: 14px; font-weight: 600; color: var(--text-muted); background-color: var(--bg-card); padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+    <div
+        style="font-size: 14px; font-weight: 600; color: var(--text-muted); background-color: var(--bg-card); padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
         <i class="fa-solid fa-calendar-day"></i> Selected Date: <strong>{{ today|date:"M d, Y" }}</strong>
     </div>
 </div>
@@ -23,15 +24,17 @@
 <div class="filter-bar">
     <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" class="form-control" placeholder="Search by customer name..." data-search-table="billingRecordsList">
+        <input type="text" class="form-control" placeholder="Search by customer name..."
+            data-search-table="billingRecordsList">
     </div>
     <div class="filter-actions">
-        {% if request.user.username != 'gst' %}
         <form method="GET" style="display: flex; align-items: center; gap: 12px; margin: 0;">
-            <label for="date-search" style="font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Search Date:</label>
-            <input type="date" id="date-search" name="date" class="form-control" value="{{ today|date:'Y-m-d' }}" onchange="this.form.submit()" style="height: 38px; width: 170px; font-family: var(--font-body);">
+            <label for="date-search"
+                style="font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Search
+                Date:</label>
+            <input type="date" id="date-search" name="date" class="form-control" value="{{ today|date:'Y-m-d' }}"
+                onchange="this.form.submit()" style="height: 38px; width: 170px; font-family: var(--font-body);">
         </form>
-        {% endif %}
     </div>
 </div>
 
@@ -63,145 +66,166 @@
         </div>
     </div>
 
-    <!-- Total Outstanding Dues Today -->
-    <div class="stat-card active-vendors">
-        <div class="stat-info">
-            <h3>Outstanding Customer Dues</h3>
-            <div class="stat-value" style="color: var(--danger-text);">₹{{ total_dues_today|floatformat:2 }}</div>
-            <div class="stat-desc">Unpaid customer balance today</div>
-        </div>
-        <div class="stat-icon">
-            <i class="fa-solid fa-circle-exclamation"></i>
-        </div>
-    </div>
+
 </div>
 {% endif %}
 {% endif %}
 
 <!-- Bills List -->
 <div id="billingRecordsList" style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
-{% for bill in daily_bills %}
-<div class="card" style="margin: 0; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); overflow: hidden; border-radius: var(--radius-md);">
-    <!-- Bill Header Band -->
-    <div style="background: var(--bg-app); border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 11px; font-weight: 700; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
-                Bill #{{ bill.id }}
-            </span>
-            <span style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-clock"></i> {{ bill.created_at|date:"h:i A" }}
-            </span>
-            {% if bill.payment_mode == 'ONLINE' %}
-            <span style="font-size: 11px; font-weight: 700; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                <i class="fa-solid fa-credit-card"></i> Online
-            </span>
-            {% else %}
-            <span style="font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                <i class="fa-solid fa-money-bill-1-wave"></i> Cash
-            </span>
-            {% endif %}
-        </div>
-        
-        <!-- Status Badge & PDF Download -->
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <a href="{% url 'single_bill_pdf' bill.id %}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; height: 32px; background: var(--bg-card); border-color: var(--border-color); color: var(--text-main); font-weight: 600;">
-                <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Download PDF
-            </a>
-            {% if bill.amount_to_be_given >= 0 or user.is_staff or user.is_superuser %}
-            <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.1); color: var(--success-text); font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 30px; height: 32px; box-sizing: border-box;">
-                <i class="fa-solid fa-circle-check"></i> Fully Paid
-            </span>
-            {% else %}
-            <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(239, 68, 68, 0.1); color: var(--danger-text); font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 30px; height: 32px; box-sizing: border-box;">
-                <i class="fa-solid fa-clock-rotate-left"></i> Outstanding
-            </span>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Client and Financials Panel -->
-    <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; border-bottom: 1px solid var(--border-color);">
-        <!-- Client Details -->
-        <div style="flex: 1; min-width: 250px;">
-            <div style="font-weight: 700; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <i class="fa-solid fa-user" style="color: var(--text-muted); font-size: 14px;"></i>
-                {{ bill.customer_name }}
-            </div>
-            {% if bill.customer_phone or bill.customer_address %}
-            <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 22px;">
-                {% if bill.customer_phone %}
-                <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-phone" style="font-size: 11px;"></i> {{ bill.customer_phone }}
-                </div>
-                {% endif %}
-                {% if bill.customer_address %}
-                <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-location-dot" style="font-size: 11px;"></i> {{ bill.customer_address }}
-                </div>
+    {% for bill in daily_bills %}
+    <div class="card"
+        style="margin: 0; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); overflow: hidden; border-radius: var(--radius-md);">
+        <!-- Bill Header Band -->
+        <div
+            style="background: var(--bg-app); border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span
+                    style="font-size: 11px; font-weight: 700; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Bill #{{ bill.id }}
+                </span>
+                <span style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-clock"></i> {{ bill.created_at|date:"h:i A" }}
+                </span>
+                {% if bill.payment_mode == 'ONLINE' %}
+                <span
+                    style="font-size: 11px; font-weight: 700; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fa-solid fa-credit-card"></i> Online
+                </span>
+                {% else %}
+                <span
+                    style="font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fa-solid fa-money-bill-1-wave"></i> Cash
+                </span>
                 {% endif %}
             </div>
-            {% endif %}
+
+            <!-- Status Badge & PDF Download -->
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <a href="{% url 'single_bill_pdf' bill.id %}" class="btn btn-secondary btn-sm"
+                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; height: 32px; background: var(--bg-card); border-color: var(--border-color); color: var(--text-main); font-weight: 600;">
+                    <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Download PDF
+                </a>
+                {% if bill.amount_to_be_given >= 0 or user.is_staff or user.is_superuser %}
+                <span
+                    style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.1); color: var(--success-text); font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 30px; height: 32px; box-sizing: border-box;">
+                    <i class="fa-solid fa-circle-check"></i> Fully Paid
+                </span>
+                {% else %}
+                <span
+                    style="display: inline-flex; align-items: center; gap: 6px; background: rgba(239, 68, 68, 0.1); color: var(--danger-text); font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 30px; height: 32px; box-sizing: border-box;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Outstanding
+                </span>
+                {% endif %}
+            </div>
         </div>
 
-        <!-- Financial Summary Box -->
-        <div style="display: flex; align-items: center; gap: 20px; background: var(--bg-app); padding: 14px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); flex-wrap: wrap;">
-            {% if user.is_staff or user.is_superuser %}
-            <div style="text-align: right; min-width: 90px;">
-                <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Total Bill</div>
-                <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.grand_total|floatformat:2 }}</div>
+        <!-- Client and Financials Panel -->
+        <div
+            style="padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; border-bottom: 1px solid var(--border-color);">
+            <!-- Client Details -->
+            <div style="flex: 1; min-width: 250px;">
+                <div
+                    style="font-weight: 700; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <i class="fa-solid fa-user" style="color: var(--text-muted); font-size: 14px;"></i>
+                    {{ bill.customer_name }}
+                </div>
+                {% if bill.customer_phone or bill.customer_address %}
+                <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 22px;">
+                    {% if bill.customer_phone %}
+                    <div
+                        style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-phone" style="font-size: 11px;"></i> {{ bill.customer_phone }}
+                    </div>
+                    {% endif %}
+                    {% if bill.customer_address %}
+                    <div
+                        style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-location-dot" style="font-size: 11px;"></i> {{ bill.customer_address }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
-            <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
-            <div style="text-align: right; min-width: 80px;">
-                <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">GST (18%)</div>
-                <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.gst_amount|floatformat:2 }}</div>
-            </div>
-            <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
-            <div style="text-align: right; min-width: 95px;">
-                <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Total + GST</div>
-                <div style="font-weight: 800; font-size: 18px; color: var(--primary);">₹{{ bill.grand_total_with_gst|floatformat:2 }}</div>
-            </div>
-            {% else %}
-            <div style="text-align: right; min-width: 90px;">
-                <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Grand Total</div>
-                <div style="font-weight: 800; font-size: 18px; color: var(--primary);">₹{{ bill.grand_total|floatformat:2 }}</div>
-            </div>
-            {% endif %}
-            <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
-            <div style="text-align: right; min-width: 80px;">
-                <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Paid</div>
+
+            <!-- Financial Summary Box -->
+            <div
+                style="display: flex; align-items: center; gap: 20px; background: var(--bg-app); padding: 14px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); flex-wrap: wrap;">
                 {% if user.is_staff or user.is_superuser %}
-                <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.grand_total_with_gst|floatformat:2 }}</div>
+                <div style="text-align: right; min-width: 90px;">
+                    <div
+                        style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">
+                        Total Bill</div>
+                    <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.grand_total|floatformat:2 }}</div>
+                </div>
+                <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
+                <div style="text-align: right; min-width: 80px;">
+                    <div
+                        style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">
+                        GST (18%)</div>
+                    <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.gst_amount|floatformat:2 }}</div>
+                </div>
+                <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
+                <div style="text-align: right; min-width: 95px;">
+                    <div
+                        style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">
+                        Total + GST</div>
+                    <div style="font-weight: 800; font-size: 18px; color: var(--primary);">₹{{ bill.grand_total_with_gst|floatformat:2 }}</div>
+                </div>
                 {% else %}
-                <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.amount_given|floatformat:2 }}</div>
+                <div style="text-align: right; min-width: 90px;">
+                    <div
+                        style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">
+                        Grand Total</div>
+                    <div style="font-weight: 800; font-size: 18px; color: var(--primary);">₹{{ bill.grand_total|floatformat:2 }}</div>
+                </div>
                 {% endif %}
-            </div>
-            {% if not user.is_staff and not user.is_superuser %}
-            <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
-            <div style="text-align: right; min-width: 80px;">
-                {% if bill.amount_to_be_given >= 0 %}
-                <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--success-text); letter-spacing: 0.5px; margin-bottom: 4px;">Change</div>
-                <div style="font-weight: 700; font-size: 15px; color: var(--success-text);">₹{{ bill.abs_amount_to_be_given|floatformat:2 }}</div>
-                {% else %}
-                <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--danger-text); letter-spacing: 0.5px; margin-bottom: 4px;">Due</div>
-                <div style="font-weight: 700; font-size: 15px; color: var(--danger-text);">₹{{ bill.abs_amount_to_be_given|floatformat:2 }}</div>
+                <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
+                <div style="text-align: right; min-width: 80px;">
+                    <div
+                        style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">
+                        Paid</div>
+                    {% if user.is_staff or user.is_superuser %}
+                    <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.grand_total_with_gst|floatformat:2 }}</div>
+                    {% else %}
+                    <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">₹{{ bill.amount_given|floatformat:2 }}</div>
+                    {% endif %}
+                </div>
+                {% if not user.is_staff and not user.is_superuser %}
+                <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
+                <div style="text-align: right; min-width: 80px;">
+                    {% if bill.amount_to_be_given >= 0 %}
+                    <div
+                        style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--success-text); letter-spacing: 0.5px; margin-bottom: 4px;">
+                        Change</div>
+                    <div style="font-weight: 700; font-size: 15px; color: var(--success-text);">₹{{ bill.abs_amount_to_be_given|floatformat:2 }}</div>
+                    {% else %}
+                    <div
+                        style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--danger-text); letter-spacing: 0.5px; margin-bottom: 4px;">
+                        Due</div>
+                    <div style="font-weight: 700; font-size: 15px; color: var(--danger-text);">₹{{ bill.abs_amount_to_be_given|floatformat:2 }}</div>
+                    {% endif %}
+                </div>
                 {% endif %}
-            </div>
-            {% endif %}
 
-            {% if bill.amount_to_be_given < 0 and not user.is_staff and not user.is_superuser %}
-            <div style="width: 1px; height: 32px; background: var(--border-color);"></div>
+                {% if bill.amount_to_be_given < 0 and not user.is_staff and not user.is_superuser %} <div
+                    style="width: 1px; height: 32px; background: var(--border-color);">
+            </div>
             <!-- Clear Due Action -->
-            <form action="{% url 'clear_due' bill.id %}" method="POST" style="margin: 0; display: flex; gap: 8px; align-items: center;">
+            <form action="{% url 'clear_due' bill.id %}" method="POST"
+                style="margin: 0; display: flex; gap: 8px; align-items: center;">
                 {% csrf_token %}
                 <div style="position: relative; display: flex; align-items: center;">
-                    <span style="position: absolute; left: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted);">₹</span>
+                    <span
+                        style="position: absolute; left: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted);">₹</span>
                     <input type="number" name="clear_amount" step="0.01" min="0.01"
-                           max="{{ bill.abs_amount_to_be_given|stringformat:'.2f' }}"
-                           class="form-control" placeholder="0.00"
-                           style="width: 90px; height: 38px; padding: 4px 8px 4px 22px; font-size: 13px; border-radius: var(--radius-sm);" required>
+                        max="{{ bill.abs_amount_to_be_given|stringformat:'.2f' }}" class="form-control"
+                        placeholder="0.00"
+                        style="width: 90px; height: 38px; padding: 4px 8px 4px 22px; font-size: 13px; border-radius: var(--radius-sm);"
+                        required>
                 </div>
                 <button type="submit" class="btn btn-primary"
-                         style="height: 38px; padding: 0 14px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; background: var(--success); border-color: var(--success);">
+                    style="height: 38px; padding: 0 14px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; background: var(--success); border-color: var(--success);">
                     Pay
                 </button>
             </form>
@@ -214,23 +238,38 @@
         <table class="table" style="margin: 0;">
             <thead style="background: var(--bg-app);">
                 <tr>
-                    <th style="padding: 12px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; width: 60px;">#</th>
-                    <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Product</th>
-                    <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; text-align: right; width: 150px;">Rate</th>
-                    <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; text-align: center; width: 100px;">Qty</th>
-                    <th style="padding: 12px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; text-align: right; width: 180px;">Subtotal</th>
+                    <th
+                        style="padding: 12px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; width: 60px;">
+                        #</th>
+                    <th
+                        style="padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">
+                        Product</th>
+                    <th
+                        style="padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; text-align: right; width: 150px;">
+                        Rate</th>
+                    <th
+                        style="padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; text-align: center; width: 100px;">
+                        Qty</th>
+                    <th
+                        style="padding: 12px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; text-align: right; width: 180px;">
+                        Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in bill.items.all %}
                 <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 14px 20px; font-size: 13px; color: var(--text-muted);">{{ forloop.counter }}</td>
+                    <td style="padding: 14px 20px; font-size: 13px; color: var(--text-muted);">{{ forloop.counter }}
+                    </td>
                     <td style="padding: 14px 16px;">
                         <div style="font-weight: 600; color: var(--text-main); font-size: 14px;">{{ item.product.name|default:"Deleted Product" }}{% if item.product and item.product.size %} ({{ item.product.size }}){% endif %}</div>
                     </td>
                     <td style="padding: 14px 16px; text-align: right; font-size: 13px; color: var(--text-main);">₹{{ item.rate|floatformat:2 }}</td>
-                    <td style="padding: 14px 16px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 13px;">{{ item.quantity }}</td>
-                    <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: var(--primary); font-size: 14px;">₹{{ item.total|floatformat:2 }}</td>
+                    <td
+                        style="padding: 14px 16px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 13px;">
+                        {{ item.quantity }}</td>
+                    <td
+                        style="padding: 14px 20px; text-align: right; font-weight: 700; color: var(--primary); font-size: 14px;">
+                        ₹{{ item.total|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -248,86 +287,109 @@
 </div>
 
 <style>
-/* Metrics Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 20px;
-    margin-bottom: 24px;
-}
+    /* Metrics Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
 
-.stat-card {
-    position: relative;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+    .stat-card {
+        position: relative;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(37, 99, 235, 0.2);
-}
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: rgba(37, 99, 235, 0.2);
+    }
 
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-}
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
 
-.stat-card.sales::before { background: linear-gradient(to bottom, #2563eb, #1d4ed8); } /* Blue */
-.stat-card.due::before { background: linear-gradient(to bottom, #10b981, #059669); } /* Green */
-.stat-card.active-vendors::before { background: linear-gradient(to bottom, #ef4444, #b91c1c); } /* Red */
+    .stat-card.sales::before {
+        background: linear-gradient(to bottom, #2563eb, #1d4ed8);
+    }
 
-.stat-info h3 {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    margin: 0 0 8px 0;
-    font-weight: 700;
-}
+    /* Blue */
+    .stat-card.due::before {
+        background: linear-gradient(to bottom, #10b981, #059669);
+    }
 
-.stat-value {
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--text-main);
-    line-height: 1;
-    margin-bottom: 6px;
-}
+    /* Green */
+    .stat-card.active-vendors::before {
+        background: linear-gradient(to bottom, #ef4444, #b91c1c);
+    }
 
-.stat-desc {
-    font-size: 12px;
-    color: var(--text-muted);
-}
+    /* Red */
 
-.stat-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    transition: all 0.3s ease;
-}
+    .stat-info h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin: 0 0 8px 0;
+        font-weight: 700;
+    }
 
-.stat-card.sales .stat-icon { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
-.stat-card.due .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.stat-card.active-vendors .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+        margin-bottom: 6px;
+    }
 
-.stat-card:hover .stat-icon {
-    transform: scale(1.1) rotate(5deg);
-}
+    .stat-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card.sales .stat-icon {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb;
+    }
+
+    .stat-card.due .stat-icon {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .stat-card.active-vendors .stat-icon {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
 </style>
 {% endblock %}

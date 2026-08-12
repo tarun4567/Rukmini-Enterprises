@@ -155,6 +155,12 @@
     .stat-card.expenditure .stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
     .stat-card.due .stat-icon { background: rgba(245, 158, 128, 0.1); color: #f59e0b; }
 
+    /* Custom styles to resolve linter errors with dynamic template expressions in style tags */
+    .text-success-custom { color: #10b981 !important; }
+    .text-danger-custom { color: #ef4444 !important; }
+    .bg-success-light-custom { background: rgba(16, 185, 129, 0.1) !important; }
+    .bg-danger-light-custom { background: rgba(239, 68, 68, 0.1) !important; }
+
     .stat-card:hover .stat-icon {
         transform: scale(1.1) rotate(5deg);
     }
@@ -313,10 +319,10 @@
         <div class="stat-card {% if remaining_balance >= 0 %}sales{% else %}due{% endif %}">
             <div class="stat-info">
                 <h3>Remaining Balance</h3>
-                <div class="stat-value" style="color: {% if remaining_balance >= 0 %}#10b981{% else %}#ef4444{% endif %};">₹{{ remaining_balance|floatformat:2 }}</div>
+                <div class="stat-value {% if remaining_balance >= 0 %}text-success-custom{% else %}text-danger-custom{% endif %}">₹{{ remaining_balance|floatformat:2 }}</div>
                 <div class="stat-desc">Remaining cash (Sales minus Expenses)</div>
             </div>
-            <div class="stat-icon" style="background: {% if remaining_balance >= 0 %}rgba(16, 185, 129, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %}; color: {% if remaining_balance >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+            <div class="stat-icon {% if remaining_balance >= 0 %}bg-success-light-custom text-success-custom{% else %}bg-danger-light-custom text-danger-custom{% endif %}">
                 <i class="fa-solid fa-scale-balanced"></i>
             </div>
         </div>
@@ -361,7 +367,7 @@
                             <td style="font-weight: 600; font-size: 13px;">{{ day.display_date }}</td>
                             <td style="text-align: right;" class="val-badge sales">₹{{ day.sales|floatformat:2 }}</td>
                             <td style="text-align: right;" class="val-badge exp">₹{{ day.expenditure|floatformat:2 }}</td>
-                            <td style="text-align: right; font-weight: 700; color: {% if day.net >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+                            <td style="text-align: right; font-weight: 700;" class="{% if day.net >= 0 %}text-success-custom{% else %}text-danger-custom{% endif %}">
                                 ₹{{ day.net|floatformat:2 }}
                             </td>
                         </tr>

@@ -277,9 +277,14 @@
                 prodList.innerHTML = '<div class="prod-no-result" style="font-size:12px; color:var(--text-muted);">Type to search by product or company...</div>';
                 return;
             }
+            const selectedBatchIds = Array.from(itemsBody.querySelectorAll('.prod-id-input'))
+                .map(input => input.value)
+                .filter(val => val !== '' && val !== hiddenId.value);
             const filtered = products.filter(p => 
-                p.name.toLowerCase().includes(q) || 
-                (p.company && p.company.toLowerCase().includes(q))
+                (p.name.toLowerCase().includes(q) || 
+                (p.company && p.company.toLowerCase().includes(q))) &&
+                !selectedBatchIds.includes(String(p.batch_id)) &&
+                !selectedBatchIds.includes(Number(p.batch_id))
             );
             if (!filtered.length) {
                 prodList.innerHTML = '<div class="prod-no-result">No active batches found</div>';

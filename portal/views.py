@@ -135,7 +135,7 @@ def user_expenses_view(request):
             comp = expense_to_delete.company_name
             amt = expense_to_delete.amount
             expense_to_delete.delete()
-            messages.warning(request, f"Expense of ₹{amt:.2f} to '{comp}' was deleted successfully.")
+            messages.warning(request, f"Expense of \u20b9{amt:.2f} to '{comp}' was deleted successfully.")
             return redirect('user_expenses')
             
         # 2. Handle Creation
@@ -161,7 +161,7 @@ def user_expenses_view(request):
                         date_paid=date_paid,
                         recorded_by=request.user
                     )
-                    messages.success(request, f"Expense of ₹{amount:.2f} paid to '{company_name}' recorded successfully.")
+                    messages.success(request, f"Expense of \u20b9{amount:.2f} paid to '{company_name}' recorded successfully.")
                     return redirect('user_expenses')
             except ValueError:
                 messages.error(request, "Invalid amount or date format.")
@@ -345,10 +345,10 @@ def single_bill_pdf(request, pk):
     payment_mode_str = "Online / Card" if bill.payment_mode == 'ONLINE' else "Cash"
     
     header_left = [
-        Paragraph("RUKMINI ENTERPRISES", company_style),
-        Paragraph("Main Bazaar, Opp. City Plaza, New Delhi - 110001<br/>"
-                  "GSTIN: 07RUKMI9999A1Z1<br/>"
-                  "Email: contact@rukminierp.com | Phone: +91 98765 43210", company_sub)
+        Paragraph("RUKMINI AGRO SEEDS", company_style),
+        Paragraph("Chowdeshwari Nagara Near Nandini Bar Tekal Road Kolar - 563101<br/>"
+                  "GSTIN:  29FAGPR9233F1Z8<br/>"
+                  "Email: rukminiagroseeds2026@gmail.com | Phone: +91 75573 82143 , 9741900947", company_sub)
     ]
     
     header_right = [
@@ -386,10 +386,10 @@ def single_bill_pdf(request, pk):
         ],
         [
             Paragraph(f"<b>Customer Name:</b> {bill.customer_name}", section_body),
-            Paragraph(f"<b>Phone:</b> {bill.customer_phone or '—'}", section_body)
+            Paragraph(f"<b>Phone:</b> {bill.customer_phone or '\u2014'}", section_body)
         ],
         [
-            Paragraph(f"<b>Address:</b> {bill.customer_address or '—'}", section_body),
+            Paragraph(f"<b>Address:</b> {bill.customer_address or '\u2014'}", section_body),
             Paragraph("", section_body)
         ]
     ]
@@ -422,9 +422,9 @@ def single_bill_pdf(request, pk):
         table_data.append([
             Paragraph(str(i), tbl_cell_center),
             Paragraph(prod_name, tbl_cell),
-            Paragraph(f"₹{item.rate:.2f}", tbl_cell_right),
+            Paragraph(f"\u20b9{item.rate:.2f}", tbl_cell_right),
             Paragraph(str(item.quantity), tbl_cell_center),
-            Paragraph(f"₹{item.total:.2f}", tbl_cell_right),
+            Paragraph(f"\u20b9{item.total:.2f}", tbl_cell_right),
         ])
         
     col_widths = [1.2*cm, 9.4*cm, 2.8*cm, 1.8*cm, 3.4*cm]  # Total width: 18.6cm
@@ -453,17 +453,17 @@ def single_bill_pdf(request, pk):
     # 5. Totals Block (Structured right-aligned)
     if request.user.is_staff or request.user.is_superuser:
         totals_data = [
-            [Paragraph("Total Bill Amount:", totals_label_style), Paragraph(f"₹{bill.grand_total:.2f}", totals_val_style)],
-            [Paragraph("GST (18%):", totals_label_style), Paragraph(f"₹{bill.gst_amount:.2f}", totals_val_style)],
-            [Paragraph("Total + GST:", totals_label_style), Paragraph(f"₹{bill.grand_total_with_gst:.2f}", totals_val_style)],
-            [Paragraph("Amount Paid:", totals_label_style), Paragraph(f"₹{bill.grand_total_with_gst:.2f}", totals_val_style)],
+            [Paragraph("Total Bill Amount:", totals_label_style), Paragraph(f"\u20b9{bill.grand_total:.2f}", totals_val_style)],
+            [Paragraph("GST (18%):", totals_label_style), Paragraph(f"\u20b9{bill.gst_amount:.2f}", totals_val_style)],
+            [Paragraph("Total + GST:", totals_label_style), Paragraph(f"\u20b9{bill.grand_total_with_gst:.2f}", totals_val_style)],
+            [Paragraph("Amount Paid:", totals_label_style), Paragraph(f"\u20b9{bill.grand_total_with_gst:.2f}", totals_val_style)],
         ]
     else:
         due_label = "Change Returned" if bill.amount_to_be_given >= 0 else "Balance Due"
         totals_data = [
-            [Paragraph("Grand Total:", totals_label_style), Paragraph(f"₹{bill.grand_total:.2f}", totals_val_style)],
-            [Paragraph("Amount Paid:", totals_label_style), Paragraph(f"₹{bill.amount_given:.2f}", totals_val_style)],
-            [Paragraph(f"<b>{due_label}:</b>", totals_label_style), Paragraph(f"₹{bill.abs_amount_to_be_given:.2f}", totals_val_style)],
+            [Paragraph("Grand Total:", totals_label_style), Paragraph(f"\u20b9{bill.grand_total:.2f}", totals_val_style)],
+            [Paragraph("Amount Paid:", totals_label_style), Paragraph(f"\u20b9{bill.amount_given:.2f}", totals_val_style)],
+            [Paragraph(f"<b>{due_label}:</b>", totals_label_style), Paragraph(f"\u20b9{bill.abs_amount_to_be_given:.2f}", totals_val_style)],
         ]
         
     totals_col_widths = [4.2*cm, 2.8*cm]
@@ -665,7 +665,7 @@ def billing_view(request):
                 messages.error(request, err)
             return render(request, 'billing.html', {'products': products, 'active_batches_json': active_batches_json})
 
-        # All valid — create bill header
+        # All valid \u2014 create bill header
         amount_to_be_given = amount_given - grand_total
         bill = Bill.objects.create(
             customer_name=cust_name,
@@ -704,9 +704,9 @@ def billing_view(request):
                 batch.product.save()
 
         change_text = (
-            f"Change: ₹{amount_to_be_given:.2f}"
+            f"Change: \u20b9{amount_to_be_given:.2f}"
             if amount_to_be_given >= 0
-            else f"Due: ₹{abs(amount_to_be_given):.2f}"
+            else f"Due: \u20b9{abs(amount_to_be_given):.2f}"
         )
         messages.success(
             request,
@@ -862,7 +862,7 @@ def user_dashboard_excel(request):
 
     # Title
     ws.merge_cells("A1:E1")
-    ws["A1"] = "Rukmini Enterprises — Accounts Report"
+    ws["A1"] = "Rukmini Enterprises \u2014 Accounts Report"
     ws["A1"].font = Font(bold=True, size=14, color="1E293B")
     ws["A1"].alignment = center
 
@@ -921,7 +921,7 @@ def user_dashboard_excel(request):
             cell.border = border
             if col_idx > 1:
                 cell.alignment = right
-                cell.number_format = '₹#,##0.00'
+                cell.number_format = '\u20b9#,##0.00'
             else:
                 cell.alignment = center
 
@@ -970,10 +970,10 @@ def user_dashboard_pdf(request):
             Paragraph("Net Balance", label_style)
         ],
         [
-            Paragraph(f"₹{total_sales:,.2f}", val_style),
-            Paragraph(f"₹{total_due:,.2f}", val_style),
-            Paragraph(f"₹{total_expenditure:,.2f}", val_style),
-            Paragraph(f"₹{total_sales - total_expenditure:,.2f}", ParagraphStyle('net_val', parent=val_style, textColor=colors.HexColor('#15803D') if (total_sales - total_expenditure) >= 0 else colors.HexColor('#B91C1C')))
+            Paragraph(f"\u20b9{total_sales:,.2f}", val_style),
+            Paragraph(f"\u20b9{total_due:,.2f}", val_style),
+            Paragraph(f"\u20b9{total_expenditure:,.2f}", val_style),
+            Paragraph(f"\u20b9{total_sales - total_expenditure:,.2f}", ParagraphStyle('net_val', parent=val_style, textColor=colors.HexColor('#15803D') if (total_sales - total_expenditure) >= 0 else colors.HexColor('#B91C1C')))
         ]
     ]
 
@@ -1006,10 +1006,10 @@ def user_dashboard_pdf(request):
     for d in daily_data:
         table_data.append([
             Paragraph(d['display_date'], td_style),
-            Paragraph(f"₹{d['sales']:,.2f}", td_num_style),
-            Paragraph(f"₹{d['due']:,.2f}", td_num_style),
-            Paragraph(f"₹{d['expenditure']:,.2f}", td_num_style),
-            Paragraph(f"₹{d['net']:,.2f}", ParagraphStyle('net_td', parent=td_num_style, fontName='Helvetica-Bold', textColor=colors.HexColor('#16A34A') if d['net'] >= 0 else colors.HexColor('#DC2626'))),
+            Paragraph(f"\u20b9{d['sales']:,.2f}", td_num_style),
+            Paragraph(f"\u20b9{d['due']:,.2f}", td_num_style),
+            Paragraph(f"\u20b9{d['expenditure']:,.2f}", td_num_style),
+            Paragraph(f"\u20b9{d['net']:,.2f}", ParagraphStyle('net_td', parent=td_num_style, fontName='Helvetica-Bold', textColor=colors.HexColor('#16A34A') if d['net'] >= 0 else colors.HexColor('#DC2626'))),
         ])
 
     ledger_table = Table(table_data, colWidths=[3.5*cm, 3.6*cm, 3.7*cm, 3.6*cm, 3.6*cm])
@@ -1057,9 +1057,9 @@ def clear_due_view(request, pk):
                     bill.save()
                     
                     if bill.amount_to_be_given >= 0:
-                        messages.success(request, f"Payment of ₹{clear_amount:.2f} received. Bill #{bill.id} is now fully cleared!")
+                        messages.success(request, f"Payment of \u20b9{clear_amount:.2f} received. Bill #{bill.id} is now fully cleared!")
                     else:
-                        messages.success(request, f"Payment of ₹{clear_amount:.2f} received for Bill #{bill.id}. Remaining due: ₹{abs(bill.amount_to_be_given):.2f}")
+                        messages.success(request, f"Payment of \u20b9{clear_amount:.2f} received for Bill #{bill.id}. Remaining due: \u20b9{abs(bill.amount_to_be_given):.2f}")
                 else:
                     messages.error(request, "Payment amount must be greater than zero.")
             except ValueError:
@@ -1118,7 +1118,7 @@ def admin_expenses_view(request):
             comp = expense_to_delete.company_name
             amt = expense_to_delete.amount
             expense_to_delete.delete()
-            messages.warning(request, f"Expense of ₹{amt:.2f} to '{comp}' was deleted successfully.")
+            messages.warning(request, f"Expense of \u20b9{amt:.2f} to '{comp}' was deleted successfully.")
             return redirect('admin_expenses')
             
         # 2. Handle Creation
@@ -1144,7 +1144,7 @@ def admin_expenses_view(request):
                          date_paid=date_paid,
                          recorded_by=request.user
                     )
-                    messages.success(request, f"Expense of ₹{amount:.2f} paid to '{company_name}' recorded successfully.")
+                    messages.success(request, f"Expense of \u20b9{amount:.2f} paid to '{company_name}' recorded successfully.")
                     return redirect('admin_expenses')
             except ValueError:
                 messages.error(request, "Invalid amount or date format.")
@@ -1196,7 +1196,7 @@ def admin_expenses_view(request):
     return render(request, 'admin_expenses.html', context)
 
 
-# ── Vendor Manager View (Admin Only) ─────────────────────────
+# -- Vendor Manager View (Admin Only) -------------------------
 @admin_required
 def vendor_view(request):
     today = timezone.localdate()
@@ -1204,49 +1204,83 @@ def vendor_view(request):
 
     if request.method == 'POST':
         action = request.POST.get('action')
-        product_id = request.POST.get('product_id')
+        company_name = request.POST.get('company_name')
 
         if action == 'update_due_date':
             due_date_str = request.POST.get('vendor_due_date')
-            if product_id and due_date_str:
+            if company_name is not None and due_date_str:
                 try:
-                    product = get_object_or_404(Product, pk=product_id)
                     due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%d').date()
-                    product.vendor_due_date = due_date
-                    product.save()
-                    messages.success(request, f"Updated due date for '{product.company_name or product.name}' to {due_date.strftime('%d %b %Y')}.")
+                    if company_name in [None, '', 'Unknown Vendor']:
+                        products_to_update = Product.objects.filter(
+                            Q(company_name__isnull=True) | Q(company_name=''),
+                            remaining_amount_to_vendor__gt=0
+                        )
+                    else:
+                        products_to_update = Product.objects.filter(
+                            company_name=company_name,
+                            remaining_amount_to_vendor__gt=0
+                        )
+                    
+                    count = products_to_update.count()
+                    for product in products_to_update:
+                        product.vendor_due_date = due_date
+                        product.save()
+                    
+                    display_name = company_name if company_name not in [None, '', 'Unknown Vendor'] else 'Unknown Vendor'
+                    messages.success(request, f"Updated due date to {due_date.strftime('%d %b %Y')} for all {count} active items of vendor '{display_name}'.")
                     return redirect('admin_vendor')
                 except ValueError:
                     messages.error(request, "Invalid date format.")
         else:
             pay_amount_str = request.POST.get('pay_amount')
             desc = request.POST.get('description', '').strip()
-            if product_id and pay_amount_str:
+            if company_name is not None and pay_amount_str:
                 try:
-                    product = get_object_or_404(Product, pk=product_id)
                     pay_amount = float(pay_amount_str)
-                    current_remaining = float(product.remaining_amount_to_vendor or 0.00)
+                    
+                    if company_name in [None, '', 'Unknown Vendor']:
+                        products_to_pay = Product.objects.filter(
+                            Q(company_name__isnull=True) | Q(company_name=''),
+                            remaining_amount_to_vendor__gt=0
+                        ).order_by('vendor_due_date', 'id')
+                    else:
+                        products_to_pay = Product.objects.filter(
+                            company_name=company_name,
+                            remaining_amount_to_vendor__gt=0
+                        ).order_by('vendor_due_date', 'id')
+
+                    total_remaining = float(sum(p.remaining_amount_to_vendor for p in products_to_pay))
 
                     if pay_amount <= 0:
                         messages.error(request, "Payment amount must be greater than zero.")
-                    elif pay_amount > current_remaining:
-                        messages.error(request, f"Payment amount exceeds the remaining balance of ₹{current_remaining:.2f}.")
+                    elif pay_amount > total_remaining:
+                        messages.error(request, f"Payment amount exceeds the total remaining balance of \u20b9{total_remaining:.2f}.")
                     else:
+                        remaining_payment = pay_amount
                         with transaction.atomic():
-                            product.remaining_amount_to_vendor = max(0.00, current_remaining - pay_amount)
-                            product.amount_paid_to_vendor = float(product.amount_paid_to_vendor or 0.00) + pay_amount
-                            product.save()
+                            for product in products_to_pay:
+                                if remaining_payment <= 0:
+                                    break
+                                current_remaining = float(product.remaining_amount_to_vendor or 0.00)
+                                payment_to_apply = min(remaining_payment, current_remaining)
+                                
+                                product.remaining_amount_to_vendor = max(0.00, current_remaining - payment_to_apply)
+                                product.amount_paid_to_vendor = float(product.amount_paid_to_vendor or 0.00) + payment_to_apply
+                                product.save()
 
-                            # 1. Log in VendorPaymentHistory
-                            VendorPaymentHistory.objects.create(
-                                product=product,
-                                amount_paid=pay_amount,
-                                payment_date=today,
-                                description=desc or None,
-                                recorded_by=request.user
-                            )
+                                # Log in VendorPaymentHistory
+                                VendorPaymentHistory.objects.create(
+                                    product=product,
+                                    amount_paid=payment_to_apply,
+                                    payment_date=today,
+                                    description=desc or None,
+                                    recorded_by=request.user
+                                )
+                                remaining_payment -= payment_to_apply
 
-                        messages.success(request, f"Successfully paid ₹{pay_amount:.2f} to vendor for '{product.company_name or product.name}'.")
+                        display_name = company_name if company_name not in [None, '', 'Unknown Vendor'] else 'Unknown Vendor'
+                        messages.success(request, f"Successfully paid \u20b9{pay_amount:.2f} to vendor '{display_name}'.")
                         return redirect('admin_vendor')
                 except ValueError:
                     messages.error(request, "Invalid payment amount entered.")
@@ -1255,38 +1289,94 @@ def vendor_view(request):
     start_date_str = request.GET.get('start_date', '').strip()
     end_date_str = request.GET.get('end_date', '').strip()
 
-    outstanding_vendors = Product.objects.filter(
+    outstanding_products = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
     )
     if search_query:
-        outstanding_vendors = outstanding_vendors.filter(
+        outstanding_products = outstanding_products.filter(
             Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
         )
     if start_date_str:
         try:
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__gte=start_date)
+            outstanding_products = outstanding_products.filter(vendor_due_date__gte=start_date)
         except ValueError:
             pass
     if end_date_str:
         try:
             end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__lte=end_date)
+            outstanding_products = outstanding_products.filter(vendor_due_date__lte=end_date)
         except ValueError:
             pass
-    outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
+    outstanding_products = outstanding_products.order_by('vendor_due_date', 'company_name')
+
+    # Group outstanding products by company_name
+    grouped_vendors = {}
+    for p in outstanding_products:
+        c_name = p.company_name or "Unknown Vendor"
+        if c_name not in grouped_vendors:
+            grouped_vendors[c_name] = {
+                'company_name': c_name,
+                'name': c_name,
+                'products': [],
+                'amount_paid_to_vendor': 0.0,
+                'remaining_amount_to_vendor': 0.0,
+                'vendor_due_date': None,
+            }
+        gv = grouped_vendors[c_name]
+        gv['products'].append(p)
+        gv['amount_paid_to_vendor'] += float(p.amount_paid_to_vendor or 0.00)
+        gv['remaining_amount_to_vendor'] += float(p.remaining_amount_to_vendor or 0.00)
+        if p.vendor_due_date:
+            if gv['vendor_due_date'] is None or p.vendor_due_date < gv['vendor_due_date']:
+                gv['vendor_due_date'] = p.vendor_due_date
+
+    outstanding_vendors_list = list(grouped_vendors.values())
+    outstanding_vendors_list.sort(
+        key=lambda x: (
+            x['vendor_due_date'] is None,
+            x['vendor_due_date'] or datetime.date.max,
+            x['company_name']
+        )
+    )
 
     # Repayments due within 3 days (warning pop-up trigger list)
-    upcoming_dues = Product.objects.filter(
+    upcoming_products = Product.objects.filter(
         remaining_amount_to_vendor__gt=0,
         vendor_due_date__range=(today, three_days_later)
     ).order_by('vendor_due_date')
 
+    upcoming_dues_grouped = {}
+    for p in upcoming_products:
+        c_name = p.company_name or "Unknown Vendor"
+        if c_name not in upcoming_dues_grouped:
+            upcoming_dues_grouped[c_name] = {
+                'company_name': c_name,
+                'name': c_name,
+                'remaining_amount_to_vendor': 0.0,
+                'vendor_due_date': p.vendor_due_date
+            }
+        upcoming_dues_grouped[c_name]['remaining_amount_to_vendor'] += float(p.remaining_amount_to_vendor or 0.00)
+    upcoming_dues = list(upcoming_dues_grouped.values())
+
     # Also include already-overdue payments
-    overdue_dues = Product.objects.filter(
+    overdue_products = Product.objects.filter(
         remaining_amount_to_vendor__gt=0,
         vendor_due_date__lt=today
     ).order_by('vendor_due_date')
+
+    overdue_dues_grouped = {}
+    for p in overdue_products:
+        c_name = p.company_name or "Unknown Vendor"
+        if c_name not in overdue_dues_grouped:
+            overdue_dues_grouped[c_name] = {
+                'company_name': c_name,
+                'name': c_name,
+                'remaining_amount_to_vendor': 0.0,
+                'vendor_due_date': p.vendor_due_date
+            }
+        overdue_dues_grouped[c_name]['remaining_amount_to_vendor'] += float(p.remaining_amount_to_vendor or 0.00)
+    overdue_dues = list(overdue_dues_grouped.values())
 
     # Retrieve vendor repayment logs history
     filter_company = request.GET.get('filter_company', '').strip()
@@ -1302,7 +1392,7 @@ def vendor_view(request):
     outstanding_count = Product.objects.filter(remaining_amount_to_vendor__gt=0).values('company_name').distinct().count()
 
     context = {
-        'outstanding_vendors': outstanding_vendors,
+        'outstanding_vendors': outstanding_vendors_list,
         'upcoming_dues': upcoming_dues,
         'overdue_dues': overdue_dues,
         'payment_history': payment_history,
@@ -1319,33 +1409,62 @@ def vendor_view(request):
     return render(request, 'admin_vendor.html', context)
 
 
-# ── Vendor Report: Excel Download (Admin Only) ───────────────
+# -- Vendor Report: Excel Download (Admin Only) ---------------
 @admin_required
 def vendor_report_excel(request):
     search_query = request.GET.get('search', '').strip()
     start_date_str = request.GET.get('start_date', '').strip()
     end_date_str = request.GET.get('end_date', '').strip()
 
-    outstanding_vendors = Product.objects.filter(
+    outstanding_products = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
     )
     if search_query:
-        outstanding_vendors = outstanding_vendors.filter(
+        outstanding_products = outstanding_products.filter(
             Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
         )
     if start_date_str:
         try:
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__gte=start_date)
+            outstanding_products = outstanding_products.filter(vendor_due_date__gte=start_date)
         except ValueError:
             pass
     if end_date_str:
         try:
             end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__lte=end_date)
+            outstanding_products = outstanding_products.filter(vendor_due_date__lte=end_date)
         except ValueError:
             pass
-    outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
+    outstanding_products = outstanding_products.order_by('vendor_due_date', 'company_name')
+
+    # Group outstanding products by company_name
+    grouped_vendors = {}
+    for p in outstanding_products:
+        c_name = p.company_name or "Unknown Vendor"
+        if c_name not in grouped_vendors:
+            grouped_vendors[c_name] = {
+                'company_name': c_name,
+                'product_names': [],
+                'total_paid': 0.0,
+                'total_remaining': 0.0,
+                'earliest_due_date': None,
+            }
+        gv = grouped_vendors[c_name]
+        gv['product_names'].append(p.name)
+        gv['total_paid'] += float(p.amount_paid_to_vendor or 0.00)
+        gv['total_remaining'] += float(p.remaining_amount_to_vendor or 0.00)
+        if p.vendor_due_date:
+            if gv['earliest_due_date'] is None or p.vendor_due_date < gv['earliest_due_date']:
+                gv['earliest_due_date'] = p.vendor_due_date
+
+    outstanding_vendors_list = list(grouped_vendors.values())
+    outstanding_vendors_list.sort(
+        key=lambda x: (
+            x['earliest_due_date'] is None,
+            x['earliest_due_date'] or datetime.date.max,
+            x['company_name']
+        )
+    )
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -1360,7 +1479,7 @@ def vendor_report_excel(request):
     border      = Border(left=thin, right=thin, top=thin, bottom=thin)
 
     ws.merge_cells("A1:G1")
-    ws["A1"] = "Rukmini Enterprises — Vendor Credit Report"
+    ws["A1"] = "Rukmini Enterprises \u2014 Vendor Credit Report"
     ws["A1"].font = Font(bold=True, size=14, color="1E293B")
     ws["A1"].alignment = center
 
@@ -1370,7 +1489,7 @@ def vendor_report_excel(request):
     ws["A2"].alignment = center
     ws.append([])
 
-    headers = ["#", "Vendor / Company", "Stock Item", "Paid (₹)", "Remaining (₹)", "Due Date"]
+    headers = ["#", "Vendor / Company", "Stock Item", "Paid (\u20b9)", "Remaining (\u20b9)", "Due Date"]
     ws.append(headers)
     for col, cell in enumerate(ws[4], 1):
         cell.font = header_font
@@ -1379,21 +1498,21 @@ def vendor_report_excel(request):
         cell.border = border
 
     today = timezone.localdate()
-    for i, p in enumerate(outstanding_vendors, 1):
-        dt_str = p.vendor_due_date.strftime('%d %b %Y') if p.vendor_due_date else '—'
+    for i, v in enumerate(outstanding_vendors_list, 1):
+        dt_str = v['earliest_due_date'].strftime('%d %b %Y') if v['earliest_due_date'] else '\u2014'
         ws.append([
             i,
-            p.company_name or "—",
-            p.name,
-            float(p.amount_paid_to_vendor or 0.00),
-            float(p.remaining_amount_to_vendor or 0.00),
+            v['company_name'],
+            ", ".join(v['product_names']),
+            v['total_paid'],
+            v['total_remaining'],
             dt_str,
         ])
         row = ws.max_row
         for cell in ws[row]:
             cell.border = border
             cell.alignment = Alignment(vertical="center")
-        if p.vendor_due_date and p.vendor_due_date < today:
+        if v['earliest_due_date'] and v['earliest_due_date'] < today:
             for cell in ws[row]:
                 cell.fill = overdue_fill
 
@@ -1407,33 +1526,62 @@ def vendor_report_excel(request):
     return response
 
 
-# ── Vendor Report: PDF Download (Admin Only) ─────────────────
+# -- Vendor Report: PDF Download (Admin Only) -----------------
 @admin_required
 def vendor_report_pdf(request):
     search_query = request.GET.get('search', '').strip()
     start_date_str = request.GET.get('start_date', '').strip()
     end_date_str = request.GET.get('end_date', '').strip()
 
-    outstanding_vendors = Product.objects.filter(
+    outstanding_products = Product.objects.filter(
         remaining_amount_to_vendor__gt=0
     )
     if search_query:
-        outstanding_vendors = outstanding_vendors.filter(
+        outstanding_products = outstanding_products.filter(
             Q(company_name__icontains=search_query) | Q(name__icontains=search_query)
         )
     if start_date_str:
         try:
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__gte=start_date)
+            outstanding_products = outstanding_products.filter(vendor_due_date__gte=start_date)
         except ValueError:
             pass
     if end_date_str:
         try:
             end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            outstanding_vendors = outstanding_vendors.filter(vendor_due_date__lte=end_date)
+            outstanding_products = outstanding_products.filter(vendor_due_date__lte=end_date)
         except ValueError:
             pass
-    outstanding_vendors = outstanding_vendors.order_by('vendor_due_date', 'company_name')
+    outstanding_products = outstanding_products.order_by('vendor_due_date', 'company_name')
+
+    # Group outstanding products by company_name
+    grouped_vendors = {}
+    for p in outstanding_products:
+        c_name = p.company_name or "Unknown Vendor"
+        if c_name not in grouped_vendors:
+            grouped_vendors[c_name] = {
+                'company_name': c_name,
+                'product_names': [],
+                'total_paid': 0.0,
+                'total_remaining': 0.0,
+                'earliest_due_date': None,
+            }
+        gv = grouped_vendors[c_name]
+        gv['product_names'].append(p.name)
+        gv['total_paid'] += float(p.amount_paid_to_vendor or 0.00)
+        gv['total_remaining'] += float(p.remaining_amount_to_vendor or 0.00)
+        if p.vendor_due_date:
+            if gv['earliest_due_date'] is None or p.vendor_due_date < gv['earliest_due_date']:
+                gv['earliest_due_date'] = p.vendor_due_date
+
+    outstanding_vendors_list = list(grouped_vendors.values())
+    outstanding_vendors_list.sort(
+        key=lambda x: (
+            x['earliest_due_date'] is None,
+            x['earliest_due_date'] or datetime.date.max,
+            x['company_name']
+        )
+    )
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
@@ -1466,19 +1614,22 @@ def vendor_report_pdf(request):
     ]
 
     today = timezone.localdate()
-    for i, p in enumerate(outstanding_vendors, 1):
-        dt_str = p.vendor_due_date.strftime('%d %b %Y') if p.vendor_due_date else '—'
+    for i, v in enumerate(outstanding_vendors_list, 1):
+        dt_str = v['earliest_due_date'].strftime('%d %b %Y') if v['earliest_due_date'] else '\u2014'
         row_idx = len(data)
+        products_summary = ", ".join(v['product_names'])
+        if len(products_summary) > 45:
+            products_summary = products_summary[:42] + "..."
         data.append([
             str(i),
-            p.company_name or "-",
-            p.name[:32],
-            f"Rs.{float(p.amount_paid_to_vendor or 0.00):,.2f}",
-            f"Rs.{float(p.remaining_amount_to_vendor or 0.00):,.2f}",
+            v['company_name'],
+            products_summary,
+            f"Rs.{v['total_paid']:,.2f}",
+            f"Rs.{v['total_remaining']:,.2f}",
             dt_str,
         ])
 
-        if p.vendor_due_date and p.vendor_due_date < today:
+        if v['earliest_due_date'] and v['earliest_due_date'] < today:
             t_styles.append(('BACKGROUND', (0, row_idx), (-1, row_idx), colors.HexColor('#FEE2E2')))
         else:
             bg_color = colors.white if i % 2 != 0 else colors.HexColor('#F8FAFC')
@@ -1497,7 +1648,7 @@ def vendor_report_pdf(request):
         ])
 
     if len(data) == 1:
-        data.append(["No outstanding vendor accounts found."] + [""] * 6)
+        data.append(["No outstanding vendor accounts found."] + [""] * 5)
         t_styles.append(('SPAN', (0, 1), (-1, 1)))
 
     tbl = Table(data, colWidths=col_widths_pdf, repeatRows=1)
@@ -1527,27 +1678,93 @@ def stock_add_view(request):
         form = StockForm(request.POST, request.FILES)
         if form.is_valid():
             with transaction.atomic():
-                product = form.save(commit=False)
-                product.stock_quantity = product.initial_quantity
+                name = form.cleaned_data.get('name').strip()
+                company_name = form.cleaned_data.get('company_name', '').strip()
                 
-                # Calculate the purchase total of the new item and add it to the vendor balance
-                purchase_total = float(product.initial_quantity or 0) * float(product.vendor_cost or 0)
-                product.total_vendor_amount = float(product.total_vendor_amount or 0) + purchase_total
-                product.remaining_amount_to_vendor = float(product.remaining_amount_to_vendor or 0) + purchase_total
+                # Check for existing product with same name and company name (case-insensitive)
+                existing_product = Product.objects.filter(
+                    name__iexact=name,
+                    company_name__iexact=company_name
+                ).first()
                 
-                product.save()
+                # Retrieve fields to determine new batch size and costs
+                new_qty = form.cleaned_data.get('initial_quantity') or 0
+                vendor_cost = form.cleaned_data.get('vendor_cost') or 0.00
+                selling_price = form.cleaned_data.get('selling_price') or 0.00
+                purchase_amount = float(new_qty) * float(vendor_cost)
+                payment_made = float(form.cleaned_data.get('amount_paid_to_vendor') or 0.00)
                 
-                # Create the first/initial batch for the new product
-                ProductBatch.objects.create(
-                    product=product,
-                    purchase_rate=product.vendor_cost or 0.00,
-                    selling_price=product.selling_price or 0.00,
-                    initial_qty=product.initial_quantity,
-                    current_qty=product.initial_quantity,
-                    stock_entered=product.stock_entered or timezone.localdate()
-                )
+                # Validation: Payment made cannot exceed current purchase total
+                if payment_made > purchase_amount:
+                    form.add_error('amount_paid_to_vendor', f"Payment made (\u20b9{payment_made}) cannot be greater than the purchase total (\u20b9{purchase_amount}).")
+                    return render(request, 'stock.html', {'form': form, 'categories': categories, 'products': products})
                 
-            messages.success(request, f"Stock item '{product.name}' was added successfully with its first batch.")
+                if existing_product:
+                    # Update existing product inventory
+                    existing_product.initial_quantity += new_qty
+                    existing_product.stock_quantity += new_qty
+                    existing_product.vendor_cost = vendor_cost
+                    existing_product.selling_price = selling_price
+                    
+                    current_outstanding = purchase_amount - payment_made
+                    
+                    # Accumulate totals
+                    existing_product.total_vendor_amount = float(existing_product.total_vendor_amount or 0.00) + purchase_amount
+                    existing_product.amount_paid_to_vendor = float(existing_product.amount_paid_to_vendor or 0.00) + payment_made
+                    existing_product.remaining_amount_to_vendor = float(existing_product.remaining_amount_to_vendor or 0.00) + current_outstanding
+                    
+                    # Save image/photo/description/size if updated in form
+                    if form.cleaned_data.get('image'):
+                        existing_product.image = form.cleaned_data.get('image')
+                    if form.cleaned_data.get('photo'):
+                        existing_product.photo = form.cleaned_data.get('photo')
+                    if form.cleaned_data.get('size'):
+                        existing_product.size = form.cleaned_data.get('size')
+                    if form.cleaned_data.get('description'):
+                        existing_product.description = form.cleaned_data.get('description')
+                    if form.cleaned_data.get('category'):
+                        existing_product.category = form.cleaned_data.get('category')
+                        
+                    existing_product.save()
+                    
+                    # Create the ProductBatch for this new stock addition
+                    ProductBatch.objects.create(
+                        product=existing_product,
+                        purchase_rate=vendor_cost,
+                        selling_price=selling_price,
+                        initial_qty=new_qty,
+                        current_qty=new_qty,
+                        stock_entered=form.cleaned_data.get('stock_entered') or timezone.localdate()
+                    )
+                    
+                    # Log stock history
+                    StockHistory.objects.create(
+                        product=existing_product,
+                        date_entered=form.cleaned_data.get('stock_entered') or timezone.localdate(),
+                        qty_added=new_qty,
+                        qty_after=existing_product.stock_quantity,
+                    )
+                    
+                    messages.success(request, f"Added {new_qty} units to existing stock item '{existing_product.name}'. Vendor balance updated.")
+                else:
+                    # Create completely new product
+                    product = form.save(commit=False)
+                    product.stock_quantity = product.initial_quantity
+                    
+                    product.total_vendor_amount = purchase_amount
+                    product.remaining_amount_to_vendor = max(0.00, purchase_amount - payment_made)
+                    product.save()
+                    
+                    ProductBatch.objects.create(
+                        product=product,
+                        purchase_rate=product.vendor_cost or 0.00,
+                        selling_price=product.selling_price or 0.00,
+                        initial_qty=product.initial_quantity,
+                        current_qty=product.initial_quantity,
+                        stock_entered=product.stock_entered or timezone.localdate()
+                    )
+                    
+                    messages.success(request, f"Stock item '{product.name}' was added successfully with its first batch.")
             return redirect('stock_add')
     else:
         form = StockForm()
@@ -1594,6 +1811,11 @@ def stock_edit_view(request, pk):
         form = StockForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             with transaction.atomic():
+                # Extract initial values before POST changes are committed
+                old_amount_paid = float(form.initial.get('amount_paid_to_vendor') or 0.00)
+                old_remaining = float(form.initial.get('remaining_amount_to_vendor') or 0.00)
+                old_total = float(form.initial.get('total_vendor_amount') or 0.00)
+
                 product = form.save(commit=False)
                 
                 # Check if a new batch was added through the consignment fields
@@ -1606,6 +1828,31 @@ def stock_edit_view(request, pk):
                         add_cost = float(add_cost_str) if add_cost_str else float(product.vendor_cost or 0.00)
                     except ValueError:
                         add_cost = float(product.vendor_cost or 0.00)
+                        
+                    # Calculate new consignment purchase amount
+                    purchase_total = float(add_qty) * float(add_cost)
+                    
+                    # Read batch payment from POST parameters
+                    add_paid_str = request.POST.get('add_batch_paid', '0.00').strip()
+                    try:
+                        add_paid = float(add_paid_str) if add_paid_str else 0.00
+                    except ValueError:
+                        add_paid = 0.00
+                        
+                    # Validate: Payment cannot be greater than batch total
+                    if add_paid > purchase_total:
+                        form.add_error(None, f"Payment made for this batch (\u20b9{add_paid}) cannot be greater than the batch total (\u20b9{purchase_total}).")
+                        stock_history = product.stock_history.all()
+                        batches = product.batches.all().order_by('-created_at')
+                        return render(request, 'stock.html', {
+                            'form': form,
+                            'product': product,
+                            'categories': categories,
+                            'products': products,
+                            'stock_history': stock_history,
+                            'batches': batches,
+                            'is_edit': True,
+                        })
                         
                     add_sell_str = request.POST.get('add_batch_sell', '').strip()
                     try:
@@ -1637,10 +1884,17 @@ def stock_edit_view(request, pk):
                     product.vendor_cost = add_cost  # update to latest vendor cost
                     product.selling_price = add_sell  # update product standard rate to latest batch rate
                     
-                    # Calculate new consignment purchase amount and add to the vendor balance
-                    purchase_total = float(add_qty) * float(add_cost)
-                    product.total_vendor_amount = float(product.total_vendor_amount or 0.00) + purchase_total
-                    product.remaining_amount_to_vendor = float(product.remaining_amount_to_vendor or 0.00) + purchase_total
+                    # Calculate cumulative vendor details
+                    auto_update = request.POST.get('auto_update_vendor_due') == 'on'
+                    if auto_update:
+                        current_outstanding = purchase_total - add_paid
+                        product.total_vendor_amount = old_total + purchase_total
+                        product.amount_paid_to_vendor = old_amount_paid + add_paid
+                        product.remaining_amount_to_vendor = old_remaining + current_outstanding
+                    else:
+                        product.total_vendor_amount = old_total
+                        product.amount_paid_to_vendor = old_amount_paid + add_paid
+                        product.remaining_amount_to_vendor = max(0.00, old_remaining - add_paid)
                     
                     product.save()
                     
@@ -1653,10 +1907,17 @@ def stock_edit_view(request, pk):
                     )
                 else:
                     # Regular update of other fields without adding a new batch
+                    # Determine new paid value submitted
+                    new_amount_paid = float(product.amount_paid_to_vendor or 0.00)
+                    payment_made = new_amount_paid - old_amount_paid
+                    
                     qty_diff = product.initial_quantity - old_initial_qty
                     if qty_diff != 0:
                         product.stock_quantity = max(0, product.stock_quantity + qty_diff)
                     
+                    # Prevent overwriting or erasing previous balance and only subtract the payment difference
+                    product.total_vendor_amount = old_total
+                    product.remaining_amount_to_vendor = max(0.00, old_remaining - payment_made)
                     product.save()
                     
                     if qty_diff != 0:
@@ -1848,9 +2109,9 @@ def revenue_report_view(request):
     return render(request, 'revenue_report.html', context)
 
 
-# ─────────────────────────────────────────────────────────────
+# -------------------------------------------------------------
 # DOWNLOAD VIEWS
-# ─────────────────────────────────────────────────────────────
+# -------------------------------------------------------------
 
 def _get_report_bills(request):
     """Shared helper: parse date params and return filtered bills + metadata."""
@@ -1892,7 +2153,7 @@ def _get_report_bills(request):
     return bills, start_date, end_date
 
 
-# ── Revenue Report: Excel Download ──────────────────────────
+# -- Revenue Report: Excel Download --------------------------
 @admin_required
 def revenue_report_excel(request):
     bills, start_date, end_date = _get_report_bills(request)
@@ -1913,7 +2174,7 @@ def revenue_report_excel(request):
 
     # Title
     ws.merge_cells("A1:H1")
-    ws["A1"] = f"Rukmini Enterprises — Revenue Report"
+    ws["A1"] = f"Rukmini Enterprises \u2014 Revenue Report"
     ws["A1"].font = Font(bold=True, size=14, color="1E293B")
     ws["A1"].alignment = center
 
@@ -1937,7 +2198,7 @@ def revenue_report_excel(request):
         cell.fill = sub_fill
     ws.append([])
 
-    # Column headers — one row per bill item
+    # Column headers \u2014 one row per bill item
     headers = ["Bill#", "Date", "Customer", "Product", "Qty", "Rate (Rs.)", "Item Total (Rs.)", "Bill Total (Rs.)", "Paid (Rs.)", "Balance (Rs.)", "Status"]
     ws.append(headers)
     for col, cell in enumerate(ws[7], 1):
@@ -1946,7 +2207,7 @@ def revenue_report_excel(request):
         cell.alignment = center
         cell.border = border
 
-    # Data rows — one row per BillItem
+    # Data rows \u2014 one row per BillItem
     for bill in bills:
         status  = "Paid" if bill.amount_to_be_given >= 0 else "Due"
         balance = float(abs(bill.amount_to_be_given)) if bill.amount_to_be_given < 0 else 0
@@ -1982,13 +2243,13 @@ def revenue_report_excel(request):
     return response
 
 
-# ── Revenue Report: PDF Download ─────────────────────────────
+# -- Revenue Report: PDF Download -----------------------------
 @admin_required
 def revenue_report_pdf(request):
     bills, start_date, end_date = _get_report_bills(request)
 
     buffer = io.BytesIO()
-    # A4 landscape usable width ≈ 27.7cm after margins
+    # A4 landscape usable width \u2248 27.7cm after margins
     doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
                             rightMargin=1.5*cm, leftMargin=1.5*cm,
                             topMargin=1.5*cm, bottomMargin=1.5*cm)
@@ -2003,7 +2264,7 @@ def revenue_report_pdf(request):
     elements.append(Paragraph("Rukmini Enterprises - Revenue Report", title_style))
     elements.append(Paragraph(f"Period: {start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')}", sub_style))
 
-    # Summary box — 4 label+value pairs
+    # Summary box \u2014 4 label+value pairs
     total_revenue = float(bills.aggregate(t=Sum('grand_total'))['t'] or 0)
     total_paid    = float(bills.aggregate(t=Sum('amount_given'))['t'] or 0)
     total_dues    = float(sum(abs(b.amount_to_be_given) for b in bills if b.amount_to_be_given < 0))
@@ -2062,7 +2323,7 @@ def revenue_report_pdf(request):
 
     tbl = Table(data, colWidths=col_widths_pdf, repeatRows=1)
     tbl.setStyle(TableStyle([
-        # ── Header row ──
+        # -- Header row --
         ('BACKGROUND',    (0,0), (-1,0),  colors.HexColor('#4F46E5')),
         ('TEXTCOLOR',     (0,0), (-1,0),  colors.white),
         ('FONTNAME',      (0,0), (-1,0),  'Helvetica-Bold'),
@@ -2071,7 +2332,7 @@ def revenue_report_pdf(request):
         ('VALIGN',        (0,0), (-1,0),  'MIDDLE'),
         ('TOPPADDING',    (0,0), (-1,0),  6),
         ('BOTTOMPADDING', (0,0), (-1,0),  6),
-        # ── Data rows ──
+        # -- Data rows --
         ('FONTNAME',      (0,1), (-1,-1), 'Helvetica'),
         ('FONTSIZE',      (0,1), (-1,-1), 7.5),
         ('VALIGN',        (0,1), (-1,-1), 'MIDDLE'),
@@ -2106,7 +2367,7 @@ def revenue_report_pdf(request):
     return response
 
 
-# ── Stock Report: Excel Download ─────────────────────────────
+# -- Stock Report: Excel Download -----------------------------
 @admin_required
 def stock_report_excel(request):
     products = Product.objects.all().select_related('category').order_by('category__name', 'name')
@@ -2126,18 +2387,22 @@ def stock_report_excel(request):
     batch_font  = Font(italic=True, size=10, color="475569")
     batch_fill  = PatternFill("solid", fgColor="F8FAFC")
 
-    ws.merge_cells("A1:I1")
-    ws["A1"] = "Rukmini Enterprises — Stock Report"
+    ws.merge_cells("A1:O1")
+    ws["A1"] = "Rukmini Enterprises \u2014 Stock Report"
     ws["A1"].font = Font(bold=True, size=14, color="1E293B")
     ws["A1"].alignment = center
 
-    ws.merge_cells("A2:I2")
+    ws.merge_cells("A2:O2")
     ws["A2"] = f"Generated: {timezone.localdate().strftime('%d %b %Y')}"
     ws["A2"].font = Font(size=10, color="64748B")
     ws["A2"].alignment = center
     ws.append([])
 
-    headers = ["#", "Product Name", "Category", "Company", "Purchase Price", "Selling Price", "Stock Qty", "Status"]
+    headers = [
+        "#", "Product Name", "Category", "Unit / Size", "Company", "Stock Entered", 
+        "Unit Cost (\u20b9)", "Total Vendor Amt (\u20b9)", "Paid to Vendor (\u20b9)", "Remaining Due (\u20b9)", 
+        "Due Date", "Selling Price (\u20b9)", "Initial Qty", "Stock Qty", "Status"
+    ]
     ws.append(headers)
     for col, cell in enumerate(ws[4], 1):
         cell.font = header_font
@@ -2151,10 +2416,17 @@ def stock_report_excel(request):
         ws.append([
             idx,
             p.name,
-            p.category.name if p.category else "—",
-            p.company_name or "—",
-            float(p.purchase_price),
-            float(p.selling_price),
+            p.category.name if p.category else "\u2014",
+            p.size or "\u2014",
+            p.company_name or "\u2014",
+            p.stock_entered.strftime('%d %b %Y') if p.stock_entered else "\u2014",
+            float(p.vendor_cost or 0.00),
+            float(p.total_vendor_amount or 0.00),
+            float(p.amount_paid_to_vendor or 0.00),
+            float(p.remaining_amount_to_vendor or 0.00),
+            p.vendor_due_date.strftime('%d %b %Y') if p.vendor_due_date else "\u2014",
+            float(p.selling_price or 0.00),
+            p.initial_quantity,
             p.stock_quantity,
             status,
         ])
@@ -2172,11 +2444,18 @@ def stock_report_excel(request):
         for b in active_batches:
             ws.append([
                 "",
-                f"  └ Batch (Recd: {b.stock_entered.strftime('%d %b %Y') if b.stock_entered else '—'})",
+                f"  + Batch (Recd: {b.stock_entered.strftime('%d %b %Y') if b.stock_entered else '\u2014'})",
                 "",
                 "",
-                float(b.purchase_rate),
-                float(b.selling_price),
+                "",
+                "",
+                float(b.purchase_rate or 0.00),
+                "",
+                "",
+                "",
+                "",
+                float(b.selling_price or 0.00),
+                b.initial_qty,
                 b.current_qty,
                 "",
             ])
@@ -2187,7 +2466,7 @@ def stock_report_excel(request):
                 cell.fill = batch_fill
                 cell.alignment = Alignment(vertical="center")
 
-    col_widths = [5, 30, 18, 22, 16, 16, 10, 12]
+    col_widths = [5, 30, 18, 12, 22, 15, 15, 18, 18, 18, 15, 16, 12, 12, 12]
     for i, w in enumerate(col_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
@@ -2197,40 +2476,127 @@ def stock_report_excel(request):
     return response
 
 
-# ── Stock Report: PDF Download ────────────────────────────────
 @admin_required
 def stock_report_pdf(request):
     products = Product.objects.all().select_related('category').order_by('category__name', 'name')
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
-                            rightMargin=1.5*cm, leftMargin=1.5*cm,
-                            topMargin=1.5*cm, bottomMargin=1.5*cm)
+                            rightMargin=1.1*cm, leftMargin=1.1*cm,
+                            topMargin=1.1*cm, bottomMargin=1.1*cm)
 
     elements = []
 
     title_style = ParagraphStyle('title2', fontSize=15, fontName='Helvetica-Bold',
-                                  textColor=colors.HexColor('#1E293B'), alignment=TA_CENTER, spaceAfter=3)
+                                  textColor=colors.HexColor('#0F172A'), alignment=TA_CENTER, spaceAfter=3)
     sub_style   = ParagraphStyle('sub2',   fontSize=9,  fontName='Helvetica',
                                   textColor=colors.HexColor('#64748B'), alignment=TA_CENTER, spaceAfter=12)
 
     elements.append(Paragraph("Rukmini Enterprises - Stock Report", title_style))
     elements.append(Paragraph(f"Generated: {timezone.localdate().strftime('%d %b %Y')}", sub_style))
 
-    # Columns: #, Product Name, Category, Company, Purchase Price, Selling Price, Stock, Status
-    # Total width = 27.7cm
-    col_widths_pdf = [1.0*cm, 7.0*cm, 4.2*cm, 4.8*cm, 3.4*cm, 3.4*cm, 2.0*cm, 2.0*cm]
+    # Custom typography style guidelines to ensure cell text wrap and alignments
+    styles = getSampleStyleSheet()
+    
+    hdr_style = ParagraphStyle(
+        'HeaderStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=6.5,
+        textColor=colors.white,
+        alignment=TA_CENTER
+    )
+    cell_l = ParagraphStyle(
+        'CellLeft',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=6.5,
+        textColor=colors.HexColor('#1E293B'),
+        alignment=TA_LEFT
+    )
+    cell_c = ParagraphStyle(
+        'CellCenter',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=6.5,
+        textColor=colors.HexColor('#1E293B'),
+        alignment=TA_CENTER
+    )
+    cell_r = ParagraphStyle(
+        'CellRight',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=6.5,
+        textColor=colors.HexColor('#1E293B'),
+        alignment=TA_RIGHT
+    )
+    cell_batch = ParagraphStyle(
+        'CellBatch',
+        parent=styles['Normal'],
+        fontName='Helvetica-Oblique',
+        fontSize=6,
+        textColor=colors.HexColor('#475569'),
+        alignment=TA_LEFT
+    )
+    cell_batch_r = ParagraphStyle(
+        'CellBatchRight',
+        parent=styles['Normal'],
+        fontName='Helvetica-Oblique',
+        fontSize=6,
+        textColor=colors.HexColor('#475569'),
+        alignment=TA_RIGHT
+    )
+    cell_batch_c = ParagraphStyle(
+        'CellBatchCenter',
+        parent=styles['Normal'],
+        fontName='Helvetica-Oblique',
+        fontSize=6,
+        textColor=colors.HexColor('#475569'),
+        alignment=TA_CENTER
+    )
+    status_ok = ParagraphStyle(
+        'StatusOk',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=6.5,
+        textColor=colors.HexColor('#059669'),
+        alignment=TA_CENTER
+    )
+    status_low = ParagraphStyle(
+        'StatusLow',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=6.5,
+        textColor=colors.HexColor('#DC2626'),
+        alignment=TA_CENTER
+    )
 
-    col_headers = ["#", "Product Name", "Category", "Company", "Purchase Price", "Selling Price", "Stock", "Status"]
+    # 15 Columns. Total width = 27.5 cm (fits landscape A4 printable area of 27.7cm)
+    col_widths_pdf = [0.8*cm, 3.5*cm, 2.0*cm, 1.3*cm, 2.2*cm, 2.0*cm, 1.8*cm, 2.0*cm, 1.8*cm, 1.8*cm, 2.0*cm, 1.8*cm, 1.5*cm, 1.5*cm, 1.5*cm]
+
+    col_headers = [
+        Paragraph("<b>#</b>", hdr_style),
+        Paragraph("<b>Product Name</b>", hdr_style),
+        Paragraph("<b>Category</b>", hdr_style),
+        Paragraph("<b>Size</b>", hdr_style),
+        Paragraph("<b>Company</b>", hdr_style),
+        Paragraph("<b>Entered</b>", hdr_style),
+        Paragraph("<b>Unit Cost</b>", hdr_style),
+        Paragraph("<b>Total Amt</b>", hdr_style),
+        Paragraph("<b>Paid</b>", hdr_style),
+        Paragraph("<b>Due</b>", hdr_style),
+        Paragraph("<b>Due Date</b>", hdr_style),
+        Paragraph("<b>Selling</b>", hdr_style),
+        Paragraph("<b>Initial</b>", hdr_style),
+        Paragraph("<b>Stock</b>", hdr_style),
+        Paragraph("<b>Status</b>", hdr_style),
+    ]
     data = [col_headers]
     
     t_styles = [
-        # ── Header row ──
-        ('BACKGROUND',    (0,0), (-1,0),  colors.HexColor('#4F46E5')),
+        # -- Header row styling --
+        ('BACKGROUND',    (0,0), (-1,0),  colors.HexColor('#1E293B')), # Professional dark slate header
         ('TEXTCOLOR',     (0,0), (-1,0),  colors.white),
-        ('FONTNAME',      (0,0), (-1,0),  'Helvetica-Bold'),
-        ('FONTSIZE',      (0,0), (-1,0),  8),
-        ('ALIGN',         (0,0), (-1,0),  'CENTER'),
         ('VALIGN',        (0,0), (-1,0),  'MIDDLE'),
         ('TOPPADDING',    (0,0), (-1,0),  6),
         ('BOTTOMPADDING', (0,0), (-1,0),  6),
@@ -2238,37 +2604,39 @@ def stock_report_pdf(request):
 
     idx = 1
     for p in products:
-        status = "Low Stock" if p.is_low_stock else "OK"
+        status_lbl = "Low Stock" if p.is_low_stock else "OK"
+        p_status = Paragraph("OK", status_ok) if status_lbl == "OK" else Paragraph("Low Stock", status_low)
+        
         row_idx = len(data)
         data.append([
-            str(idx),
-            p.name[:32],
-            p.category.name[:16] if p.category else "-",
-            (p.company_name or "-")[:22],
-            f"Rs.{float(p.purchase_price):,.2f}",
-            f"Rs.{float(p.selling_price):,.2f}",
-            str(p.stock_quantity),
-            status,
+            Paragraph(str(idx), cell_c),
+            Paragraph(p.name, cell_l),
+            Paragraph(p.category.name if p.category else "-", cell_l),
+            Paragraph(p.size or "-", cell_c),
+            Paragraph(p.company_name or "-", cell_l),
+            Paragraph(p.stock_entered.strftime('%d %b %Y') if p.stock_entered else "-", cell_c),
+            Paragraph(f"Rs.{float(p.vendor_cost or 0.00):,.2f}", cell_r),
+            Paragraph(f"Rs.{float(p.total_vendor_amount or 0.00):,.2f}", cell_r),
+            Paragraph(f"Rs.{float(p.amount_paid_to_vendor or 0.00):,.2f}", cell_r),
+            Paragraph(f"Rs.{float(p.remaining_amount_to_vendor or 0.00):,.2f}", cell_r),
+            Paragraph(p.vendor_due_date.strftime('%d %b %Y') if p.vendor_due_date else "-", cell_c),
+            Paragraph(f"Rs.{float(p.selling_price or 0.00):,.2f}", cell_r),
+            Paragraph(str(p.initial_quantity), cell_c),
+            Paragraph(str(p.stock_quantity), cell_c),
+            p_status,
         ])
         
         # Style for product row
         if p.is_low_stock:
-            t_styles.append(('BACKGROUND', (0, row_idx), (-1, row_idx), colors.HexColor('#FEE2E2')))
+            t_styles.append(('BACKGROUND', (0, row_idx), (-1, row_idx), colors.HexColor('#FEF2F2'))) # Soft red warning background
         else:
-            # Alternating background style for product rows
             bg_color = colors.white if idx % 2 != 0 else colors.HexColor('#F8FAFC')
             t_styles.append(('BACKGROUND', (0, row_idx), (-1, row_idx), bg_color))
             
         t_styles.extend([
-            ('FONTNAME',      (0, row_idx), (-1, row_idx), 'Helvetica'),
-            ('FONTSIZE',      (0, row_idx), (-1, row_idx), 7.5),
-            ('ALIGN',         (0, row_idx), (0, row_idx),  'CENTER'),
-            ('ALIGN',         (1, row_idx), (3, row_idx),  'LEFT'),
-            ('ALIGN',         (4, row_idx), (5, row_idx),  'RIGHT'),
-            ('ALIGN',         (6, row_idx), (7, row_idx),  'CENTER'),
             ('VALIGN',        (0, row_idx), (-1, row_idx), 'MIDDLE'),
-            ('TOPPADDING',    (0, row_idx), (-1, row_idx), 5),
-            ('BOTTOMPADDING', (0, row_idx), (-1, row_idx), 5),
+            ('TOPPADDING',    (0, row_idx), (-1, row_idx), 4),
+            ('BOTTOMPADDING', (0, row_idx), (-1, row_idx), 4),
         ])
         
         idx += 1
@@ -2279,35 +2647,36 @@ def stock_report_pdf(request):
             batch_row_idx = len(data)
             dt_str = b.stock_entered.strftime('%d %b %Y') if b.stock_entered else '-'
             data.append([
-                "",
-                f"  └ Batch (Recd: {dt_str})",
-                "",
-                "",
-                f"Rs.{float(b.purchase_rate):,.2f}",
-                f"Rs.{float(b.selling_price):,.2f}",
-                str(b.current_qty),
-                "",
+                Paragraph("", cell_batch_c),
+                Paragraph(f"  \u21b3 Batch (Recd: {dt_str})", cell_batch),
+                Paragraph("", cell_batch),
+                Paragraph("", cell_batch_c),
+                Paragraph("", cell_batch),
+                Paragraph("", cell_batch_c),
+                Paragraph(f"Rs.{float(b.purchase_rate or 0.00):,.2f}", cell_batch_r),
+                Paragraph("", cell_batch_r),
+                Paragraph("", cell_batch_r),
+                Paragraph("", cell_batch_r),
+                Paragraph("", cell_batch_c),
+                Paragraph(f"Rs.{float(b.selling_price or 0.00):,.2f}", cell_batch_r),
+                Paragraph(str(b.initial_qty), cell_batch_c),
+                Paragraph(str(b.current_qty), cell_batch_c),
+                Paragraph("", cell_batch_c),
             ])
             t_styles.extend([
-                ('BACKGROUND',    (0, batch_row_idx), (-1, batch_row_idx), colors.HexColor('#F1F5F9')),
-                ('FONTNAME',      (0, batch_row_idx), (-1, batch_row_idx), 'Helvetica-Oblique'),
-                ('FONTSIZE',      (0, batch_row_idx), (-1, batch_row_idx), 7.0),
-                ('TEXTCOLOR',     (0, batch_row_idx), (-1, batch_row_idx), colors.HexColor('#475569')),
-                ('ALIGN',         (1, batch_row_idx), (1, batch_row_idx),  'LEFT'),
-                ('ALIGN',         (4, batch_row_idx), (5, batch_row_idx),  'RIGHT'),
-                ('ALIGN',         (6, batch_row_idx), (6, batch_row_idx),  'CENTER'),
+                ('BACKGROUND',    (0, batch_row_idx), (-1, batch_row_idx), colors.HexColor('#F8FAFC')),
                 ('VALIGN',        (0, batch_row_idx), (-1, batch_row_idx), 'MIDDLE'),
-                ('TOPPADDING',    (0, batch_row_idx), (-1, batch_row_idx), 4),
-                ('BOTTOMPADDING', (0, batch_row_idx), (-1, batch_row_idx), 4),
+                ('TOPPADDING',    (0, batch_row_idx), (-1, batch_row_idx), 3.5),
+                ('BOTTOMPADDING', (0, batch_row_idx), (-1, batch_row_idx), 3.5),
             ])
 
     if len(data) == 1:
-        data.append(["No stock items found."] + [""] * 7)
+        data.append([Paragraph("No stock items found.", cell_c)] + [""] * 14)
         t_styles.append(('SPAN', (0, 1), (-1, 1)))
 
     tbl = Table(data, colWidths=col_widths_pdf, repeatRows=1)
     
-    # Generic table layout borders and paddings
+    # Subtle borders and compact padding
     t_styles.extend([
         ('BOX',           (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('INNERGRID',     (0,0), (-1,-1), 0.3, colors.HexColor('#E2E8F0')),
@@ -2325,7 +2694,7 @@ def stock_report_pdf(request):
     return response
 
 
-# ── Stock History: Excel Download ────────────────────────────
+# -- Stock History: Excel Download ----------------------------
 @admin_required
 def stock_history_excel(request, pk):
     product = get_object_or_404(Product, pk=pk)
@@ -2347,12 +2716,12 @@ def stock_history_excel(request, pk):
 
     # Title block
     ws.merge_cells("A1:E1")
-    ws["A1"] = f"Rukmini Enterprises — Stock Update History"
+    ws["A1"] = f"Rukmini Enterprises \u2014 Stock Update History"
     ws["A1"].font = Font(bold=True, size=14, color="1E293B")
     ws["A1"].alignment = center
 
     ws.merge_cells("A2:E2")
-    ws["A2"] = f"Product: {product.name}  |  Company: {product.company_name or '—'}  |  Category: {product.category.name if product.category else '—'}"
+    ws["A2"] = f"Product: {product.name}  |  Company: {product.company_name or '\u2014'}  |  Category: {product.category.name if product.category else '\u2014'}"
     ws["A2"].font = Font(size=10, color="64748B")
     ws["A2"].alignment = center
 
@@ -2402,7 +2771,7 @@ def stock_history_excel(request, pk):
     return response
 
 
-# ── Stock History: PDF Download ────────────────────────────
+# -- Stock History: PDF Download ----------------------------
 @admin_required
 def stock_history_pdf(request, pk):
     product = get_object_or_404(Product, pk=pk)
@@ -2421,7 +2790,7 @@ def stock_history_pdf(request, pk):
 
     elements.append(Paragraph("Rukmini Enterprises - Stock Update History", title_style))
     elements.append(Paragraph(
-        f"Product: {product.name}  |  Company: {product.company_name or '—'}  |  Category: {product.category.name if product.category else '—'}",
+        f"Product: {product.name}  |  Company: {product.company_name or '\u2014'}  |  Category: {product.category.name if product.category else '\u2014'}",
         sub_style
     ))
     elements.append(Paragraph(
@@ -2523,7 +2892,7 @@ def stock_history_pdf(request, pk):
     return response
 
 
-# ── All Stock History: Excel Download ────────────────────────────
+# -- All Stock History: Excel Download ----------------------------
 @admin_required
 def stock_all_history_excel(request):
     from .models import StockHistory
@@ -2545,7 +2914,7 @@ def stock_all_history_excel(request):
 
     # Title
     ws.merge_cells("A1:F1")
-    ws["A1"] = "Rukmini Enterprises — All Stock Update History"
+    ws["A1"] = "Rukmini Enterprises \u2014 All Stock Update History"
     ws["A1"].font = Font(bold=True, size=14, color="1E293B")
     ws["A1"].alignment = center
 
@@ -2571,7 +2940,7 @@ def stock_all_history_excel(request):
         if entry.product != current_product:
             current_product = entry.product
             ws.append([
-                "", f"▶  {entry.product.name}  —  {entry.product.company_name or '—'}",
+                "", f"\u25b6  {entry.product.name}  \u2014  {entry.product.company_name or '\u2014'}",
                 "", "", "", ""
             ])
             grp_row = ws.max_row
@@ -2610,7 +2979,7 @@ def stock_all_history_excel(request):
     return response
 
 
-# ── All Stock History: PDF Download ────────────────────────────
+# -- All Stock History: PDF Download ----------------------------
 @admin_required
 def stock_all_history_pdf(request):
     from .models import StockHistory
@@ -2695,7 +3064,7 @@ def stock_all_history_pdf(request):
         # Group header row per product
         if entry.product != current_product:
             current_product = entry.product
-            data.append([f"▶  {entry.product.name}  —  {entry.product.company_name or '—'}", "", "", "", "", ""])
+            data.append([f"\u25b6  {entry.product.name}  \u2014  {entry.product.company_name or '\u2014'}", "", "", "", "", ""])
             row_styles.append(('BACKGROUND', (0, data_row_index), (-1, data_row_index), colors.HexColor('#EEF2FF')))
             row_styles.append(('TEXTCOLOR',  (0, data_row_index), (-1, data_row_index), colors.HexColor('#4F46E5')))
             row_styles.append(('FONTNAME',   (0, data_row_index), (-1, data_row_index), 'Helvetica-Bold'))

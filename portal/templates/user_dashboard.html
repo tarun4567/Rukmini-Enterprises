@@ -155,6 +155,10 @@
     .stat-card.due .stat-icon { background: rgba(245, 158, 128, 0.1); color: #f59e0b; }
     .stat-card.expenditure .stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
 
+    /* Custom styles to resolve linter errors with dynamic template expressions in style tags */
+    .text-success-custom { color: #10b981 !important; }
+    .text-danger-custom { color: #ef4444 !important; }
+
     .stat-card:hover .stat-icon {
         transform: scale(1.1) rotate(5deg);
     }
@@ -375,7 +379,7 @@
                             <td style="text-align: right;" class="val-badge sales">₹{{ day.sales|floatformat:2 }}</td>
                             <td style="text-align: right;" class="val-badge due">₹{{ day.due|floatformat:2 }}</td>
                             <td style="text-align: right;" class="val-badge exp">₹{{ day.expenditure|floatformat:2 }}</td>
-                            <td style="text-align: right; font-weight: 700; color: {% if day.net >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+                            <td style="text-align: right; font-weight: 700;" class="{% if day.net >= 0 %}text-success-custom{% else %}text-danger-custom{% endif %}">
                                 ₹{{ day.net|floatformat:2 }}
                             </td>
                         </tr>

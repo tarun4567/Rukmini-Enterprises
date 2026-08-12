@@ -23,143 +23,180 @@
     <div class="card-body">
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            
+
             <div class="form-group">
                 <label for="id_category" class="form-label">Category *</label>
                 <select id="id_category" name="category" class="form-control" required>
                     <option value="">-- Select Category --</option>
                     {% for category in form.fields.category.queryset %}
-                        <option value="{{ category.id }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" or form.instance.category.id == category.id %}selected{% endif %}>
-                            {{ category.name }}
-                        </option>
+                    <option value="{{ category.id }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" or form.instance.category.id == category.id %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
                     {% endfor %}
                 </select>
                 {% if form.category.errors %}
-                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.category.errors.0 }}</div>
+                <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.category.errors.0 }}
+                </div>
                 {% endif %}
             </div>
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="id_company_name" class="form-label">Company Name *</label>
-                    <input type="text" id="id_company_name" name="company_name" class="form-control" value="{{ form.company_name.value|default:'' }}" required placeholder="e.g. Rukmini Metal Corp">
+                    <input type="text" id="id_company_name" name="company_name" class="form-control"
+                        value="{{ form.company_name.value|default:'' }}" required placeholder="e.g. Rukmini Metal Corp">
                     {% if form.company_name.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.company_name.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                        form.company_name.errors.0 }}</div>
                     {% endif %}
                 </div>
-                
+
                 <div class="form-group">
                     <label for="id_name" class="form-label">Product Name *</label>
-                    <input type="text" id="id_name" name="name" class="form-control" value="{{ form.name.value|default:'' }}" required placeholder="e.g. TMT Steel Bar 12mm">
+                    <input type="text" id="id_name" name="name" class="form-control"
+                        value="{{ form.name.value|default:'' }}" required placeholder="e.g. TMT Steel Bar 12mm">
                     {% if form.name.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.name.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.name.errors.0 }}
+                    </div>
                     {% endif %}
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="id_description" class="form-label">Description *</label>
-                <textarea id="id_description" name="description" class="form-control" rows="3" required placeholder="Enter product detailed specifications, size, grades, etc.">{{ form.description.value|default:'' }}</textarea>
+                <textarea id="id_description" name="description" class="form-control" rows="3" required
+                    placeholder="Enter product detailed specifications, size, grades, etc.">{{ form.description.value|default:'' }}</textarea>
                 {% if form.description.errors %}
-                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.description.errors.0 }}</div>
+                <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.description.errors.0
+                    }}</div>
                 {% endif %}
             </div>
 
             <div class="form-group">
                 <!-- Quick Unit Helper -->
                 <div style="margin-bottom: 12px;">
-                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Quick Unit/Size Helper</span>
+                    <span
+                        style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Quick
+                        Unit/Size Helper</span>
                     <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                        <button type="button" class="unit-btn" data-unit="ml" style="padding: 5px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-app); color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s;">ml</button>
-                        <button type="button" class="unit-btn" data-unit="gram" style="padding: 5px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-app); color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s;">gram</button>
-                        <button type="button" class="unit-btn" data-unit="kg" style="padding: 5px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-app); color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s;">kg</button>
+                        <button type="button" class="unit-btn" data-unit="ml"
+                            style="padding: 5px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-app); color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s;">ml</button>
+                        <button type="button" class="unit-btn" data-unit="gram"
+                            style="padding: 5px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-app); color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s;">gram</button>
+                        <button type="button" class="unit-btn" data-unit="kg"
+                            style="padding: 5px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-app); color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s;">kg</button>
                     </div>
                     <div id="unit-sub-options" style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;"></div>
                 </div>
 
                 <label for="id_size" class="form-label" style="display: block; margin-top: 12px;">Unit / Size</label>
-                <input type="text" id="id_size" name="size" class="form-control" value="{{ form.size.value|default:'' }}" placeholder="e.g. 250gms, 500ml, 1kg">
+                <input type="text" id="id_size" name="size" class="form-control"
+                    value="{{ form.size.value|default:'' }}" placeholder="e.g. 250gms, 500ml, 1kg">
                 {% if form.size.errors %}
-                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.size.errors.0 }}</div>
+                <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.size.errors.0 }}</div>
                 {% endif %}
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label for="id_initial_quantity" class="form-label">Qty *</label>
-                    <input type="number" id="id_initial_quantity" name="initial_quantity" class="form-control" value="{{ form.initial_quantity.value|default:'' }}" required placeholder="e.g. 50">
+                    <input type="number" id="id_initial_quantity" name="initial_quantity" class="form-control"
+                        value="{{ form.initial_quantity.value|default:'' }}" required placeholder="e.g. 50">
                     {% if form.initial_quantity.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.initial_quantity.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                        form.initial_quantity.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 <div class="form-group">
                     <label for="id_selling_price" class="form-label">Amt *</label>
-                    <input type="number" id="id_selling_price" name="selling_price" class="form-control" step="0.01" value="{{ form.selling_price.value|default:'' }}" required placeholder="e.g. 85.00">
+                    <input type="number" id="id_selling_price" name="selling_price" class="form-control" step="0.01"
+                        value="{{ form.selling_price.value|default:'' }}" required placeholder="e.g. 85.00">
                     {% if form.selling_price.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.selling_price.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                        form.selling_price.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
 
-             <div class="form-row">
+            <div class="form-row">
                 <div class="form-group">
                     <label for="id_stock_entered" class="form-label">Stock Entered *</label>
-                    <input type="date" id="id_stock_entered" name="stock_entered" class="form-control" value="{{ form.stock_entered.value|date:'Y-m-d'|default:'' }}" required>
+                    <input type="date" id="id_stock_entered" name="stock_entered" class="form-control"
+                        value="{{ form.stock_entered.value|date:'Y-m-d'|default:'' }}" required>
                     {% if form.stock_entered.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.stock_entered.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                        form.stock_entered.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 <div class="form-group">
                     <label for="id_vendor_cost" class="form-label">Purchase Price (₹)</label>
-                    <input type="number" id="id_vendor_cost" name="vendor_cost" class="form-control" step="0.01" value="{{ form.vendor_cost.value|default:'' }}" placeholder="e.g. 50.00">
+                    <input type="number" id="id_vendor_cost" name="vendor_cost" class="form-control" step="0.01"
+                        value="{{ form.vendor_cost.value|default:'' }}" placeholder="e.g. 50.00">
                     {% if form.vendor_cost.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.vendor_cost.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                        form.vendor_cost.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 <div class="form-group">
                     <label for="id_purchase_total" class="form-label">Total Amt (₹)</label>
-                    <input type="number" id="id_purchase_total" class="form-control" readonly style="background: var(--bg-card); border-color: var(--border-color); cursor: not-allowed; font-weight: bold; color: var(--primary);" placeholder="0.00">
+                    <input type="number" id="id_purchase_total" class="form-control" readonly
+                        style="background: var(--bg-card); border-color: var(--border-color); cursor: not-allowed; font-weight: bold; color: var(--primary);"
+                        placeholder="0.00">
                 </div>
             </div>
 
             <!-- Vendor Payment Details (Optional) -->
             <div style="margin: 24px 0 16px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
-                <h4 style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">Vendor Payment Details (Optional)</h4>
-                
+                <h4
+                    style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+                    Vendor Payment Details (Optional)</h4>
+
                 <div class="form-group" style="margin-bottom: 14px;">
                     <label for="id_total_vendor_amount" class="form-label">Total Vendor Amount (₹)</label>
-                    <input type="number" id="id_total_vendor_amount" name="total_vendor_amount" class="form-control" step="0.01" value="{{ form.total_vendor_amount.value|default:'' }}" readonly style="background: var(--bg-card); border-color: var(--border-color); cursor: not-allowed; font-weight: bold;" placeholder="e.g. 50.00">
+                    <input type="number" id="id_total_vendor_amount" name="total_vendor_amount" class="form-control"
+                        step="0.01" value="{{ form.total_vendor_amount.value|default:'' }}" readonly
+                        style="background: var(--bg-card); border-color: var(--border-color); cursor: not-allowed; font-weight: bold;"
+                        placeholder="e.g. 50.00">
                     {% if form.total_vendor_amount.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.total_vendor_amount.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                        form.total_vendor_amount.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="id_amount_paid_to_vendor" class="form-label">Amount Given to Vendor (₹)</label>
-                        <input type="number" id="id_amount_paid_to_vendor" name="amount_paid_to_vendor" class="form-control" step="0.01" value="{{ form.amount_paid_to_vendor.value|default:'' }}" placeholder="e.g. 20.00">
+                        <input type="number" id="id_amount_paid_to_vendor" name="amount_paid_to_vendor"
+                            class="form-control" step="0.01" value="{{ form.amount_paid_to_vendor.value|default:'' }}"
+                            placeholder="e.g. 20.00">
                         {% if form.amount_paid_to_vendor.errors %}
-                            <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.amount_paid_to_vendor.errors.0 }}</div>
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                            form.amount_paid_to_vendor.errors.0 }}</div>
                         {% endif %}
                     </div>
 
                     <div class="form-group">
                         <label for="id_remaining_amount_to_vendor" class="form-label">Remaining Amount (₹)</label>
-                        <input type="number" id="id_remaining_amount_to_vendor" name="remaining_amount_to_vendor" class="form-control" step="0.01" value="{{ form.remaining_amount_to_vendor.value|default:'' }}" placeholder="e.g. 30.00">
+                        <input type="number" id="id_remaining_amount_to_vendor" name="remaining_amount_to_vendor"
+                            class="form-control" step="0.01"
+                            value="{{ form.remaining_amount_to_vendor.value|default:'' }}" placeholder="e.g. 30.00">
                         {% if form.remaining_amount_to_vendor.errors %}
-                            <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.remaining_amount_to_vendor.errors.0 }}</div>
+                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                            form.remaining_amount_to_vendor.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-top: 12px;">
                     <label for="id_vendor_due_date" class="form-label">Due Date</label>
-                    <input type="date" id="id_vendor_due_date" name="vendor_due_date" class="form-control" value="{{ form.vendor_due_date.value|date:'Y-m-d'|default:'' }}">
+                    <input type="date" id="id_vendor_due_date" name="vendor_due_date" class="form-control"
+                        value="{{ form.vendor_due_date.value|date:'Y-m-d'|default:'' }}">
                     {% if form.vendor_due_date.errors %}
-                        <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{ form.vendor_due_date.errors.0 }}</div>
+                    <div style="color: var(--danger-text); font-size: 12px; margin-top: 4px;">{{
+                        form.vendor_due_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -167,48 +204,65 @@
             {% if is_edit %}
             <!-- FIFO New Batch Consignment Details -->
             <div style="margin: 24px 0 16px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
-                <h4 style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+                <h4
+                    style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
                     <i class="fa-solid fa-truck-ramp-box"></i> Add New Batch / Consignment
                 </h4>
                 <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
                     If the vendor has delivered more quantity of this product, enter it below to create a new batch.
                 </p>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="id_add_batch_qty" class="form-label">New Qty Received</label>
-                        <input type="number" id="id_add_batch_qty" name="add_batch_qty" class="form-control" placeholder="e.g. 10">
+                        <input type="number" id="id_add_batch_qty" name="add_batch_qty" class="form-control"
+                            placeholder="e.g. 10">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="id_add_batch_cost" class="form-label">Purchase Price (₹)</label>
-                        <input type="number" id="id_add_batch_cost" name="add_batch_cost" class="form-control" step="0.01" placeholder="e.g. 150.00">
+                        <input type="number" id="id_add_batch_cost" name="add_batch_cost" class="form-control"
+                            step="0.01" placeholder="e.g. 150.00">
                     </div>
                 </div>
 
                 <div class="form-row" style="margin-top: 12px;">
                     <div class="form-group">
                         <label for="id_add_batch_sell" class="form-label">New Selling Price (Amt) (₹)</label>
-                        <input type="number" id="id_add_batch_sell" name="add_batch_sell" class="form-control" step="0.01" placeholder="e.g. 180.00">
+                        <input type="number" id="id_add_batch_sell" name="add_batch_sell" class="form-control"
+                            step="0.01" placeholder="e.g. 180.00">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="id_add_batch_date" class="form-label">Date Received</label>
-                        <input type="date" id="id_add_batch_date" name="add_batch_date" class="form-control" value="{% now 'Y-m-d' %}">
+                        <input type="date" id="id_add_batch_date" name="add_batch_date" class="form-control"
+                            value="{% now 'Y-m-d' %}">
                     </div>
                 </div>
 
-                <div class="form-row" style="margin-top: 12px; align-items: flex-end;">
+                <div class="form-row" style="margin-top: 12px;">
                     <div class="form-group">
                         <label for="id_add_batch_total" class="form-label">Total Amt (₹)</label>
-                        <input type="number" id="id_add_batch_total" class="form-control" readonly style="background: var(--bg-card); border-color: var(--border-color); cursor: not-allowed; font-weight: bold; color: var(--primary);" placeholder="0.00">
+                        <input type="number" id="id_add_batch_total" class="form-control" readonly
+                            style="background: var(--bg-card); border-color: var(--border-color); cursor: not-allowed; font-weight: bold; color: var(--primary);"
+                            placeholder="0.00">
                     </div>
-                    <div class="form-group" style="padding-bottom: 10px;">
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-main); cursor: pointer; margin: 0;">
-                            <input type="checkbox" name="auto_update_vendor_due" id="id_auto_update_vendor_due" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);">
-                            Automatically add this batch value to Vendor Total & Remaining Due
-                        </label>
+                    <div class="form-group">
+                        <label for="id_add_batch_paid" class="form-label">Payment Made for this Batch (₹)</label>
+                        <input type="number" id="id_add_batch_paid" name="add_batch_paid" class="form-control"
+                            step="0.01" placeholder="e.g. 1000.00" value="0.00">
+                        <div id="batch-payment-error"
+                            style="color: var(--danger-text); font-size: 12px; margin-top: 4px; display: none;"></div>
                     </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-main); cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="auto_update_vendor_due" id="id_auto_update_vendor_due" checked
+                            style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);">
+                        Automatically add this batch value to Vendor Total & Remaining Due
+                    </label>
                 </div>
             </div>
             {% endif %}
@@ -217,10 +271,11 @@
                 <label for="id_photo" class="form-label">Photo (Optional)</label>
                 <input type="file" id="id_photo" name="photo" class="form-control" style="padding-top: 6px;">
                 {% if form.instance.photo %}
-                    <div style="font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
-                        <span>Current Photo:</span>
-                        <a href="{{ form.instance.photo.url }}" target="_blank" style="color: var(--primary); font-weight: 600;">{{ form.instance.photo.name }}</a>
-                    </div>
+                <div style="font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                    <span>Current Photo:</span>
+                    <a href="{{ form.instance.photo.url }}" target="_blank"
+                        style="color: var(--primary); font-weight: 600;">{{ form.instance.photo.name }}</a>
+                </div>
                 {% endif %}
             </div>
 
@@ -242,7 +297,8 @@
             <h2><i class="fa-solid fa-layer-group" style="color: var(--primary);"></i> Active Stock Batches (FIFO)</h2>
             <p>List of all individual batches and their consumption details for <strong>{{ product.name }}</strong></p>
         </div>
-        <span class="badge" style="background: var(--primary-light); color: var(--primary); font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 700;">
+        <span class="badge"
+            style="background: var(--primary-light); color: var(--primary); font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 700;">
             {{ batches|length }} batch{{ batches|length|pluralize:"es" }}
         </span>
     </div>
@@ -272,12 +328,13 @@
                             </td>
                             <td><strong>₹{{ batch.purchase_rate }}</strong></td>
                             <td><strong>₹{{ batch.selling_price }}</strong></td>
-                            <td style="text-align: center;"><strong>{{ batch.initial_qty }}</strong> <span style="font-size: 11px; color: var(--text-muted);">units</span></td>
+                            <td style="text-align: center;"><strong>{{ batch.initial_qty }}</strong> <span
+                                    style="font-size: 11px; color: var(--text-muted);">units</span></td>
                             <td style="text-align: center;">
                                 {% if batch.current_qty > 0 %}
-                                    <strong style="color: var(--success); font-size: 15px;">{{ batch.current_qty }}</strong>
+                                <strong style="color: var(--success); font-size: 15px;">{{ batch.current_qty }}</strong>
                                 {% else %}
-                                    <span style="color: var(--text-muted);">0</span>
+                                <span style="color: var(--text-muted);">0</span>
                                 {% endif %}
                                 <span style="font-size: 11px; color: var(--text-muted);">units</span>
                             </td>
@@ -287,17 +344,18 @@
                             </td>
                             <td style="text-align: right;">
                                 {% if batch.current_qty == 0 %}
-                                    <span class="badge danger" style="font-size: 11px; padding: 3px 8px;">Consumed</span>
+                                <span class="badge danger" style="font-size: 11px; padding: 3px 8px;">Consumed</span>
                                 {% elif batch.current_qty == batch.initial_qty %}
-                                    <span class="badge success" style="font-size: 11px; padding: 3px 8px;">Unused</span>
+                                <span class="badge success" style="font-size: 11px; padding: 3px 8px;">Unused</span>
                                 {% else %}
-                                    <span class="badge warning" style="font-size: 11px; padding: 3px 8px; background: rgba(245,158,11,0.1); color: rgb(245,158,11);">Partial</span>
+                                <span class="badge warning"
+                                    style="font-size: 11px; padding: 3px 8px; background: rgba(245,158,11,0.1); color: rgb(245,158,11);">Partial</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                            <td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">
                                 No batches tracked yet for this product.
                             </td>
                         </tr>
@@ -316,7 +374,8 @@
             <h2><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Stock Update History</h2>
             <p>Every quantity update logged for <strong>{{ product.name }}</strong></p>
         </div>
-        <span class="badge" style="background: var(--primary-light); color: var(--primary); font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 700;">
+        <span class="badge"
+            style="background: var(--primary-light); color: var(--primary); font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 700;">
             {{ stock_history|length }} update{{ stock_history|length|pluralize }}
         </span>
     </div>
@@ -338,9 +397,10 @@
                         {% for entry in stock_history %}
                         <tr>
                             <td style="color: var(--text-muted); font-size: 12px;">{{ forloop.counter }}</td>
-                            <td>
+                            <td style="white-space: nowrap;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+                                    <div
+                                        style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center;">
                                         <i class="fa-solid fa-calendar-day" style="font-size: 12px;"></i>
                                     </div>
                                     <strong>{{ entry.date_entered|date:"d M Y" }}</strong>
@@ -348,27 +408,29 @@
                             </td>
                             <td style="text-align: center;">
                                 {% if entry.qty_added > 0 %}
-                                    <span class="badge success" style="font-size: 13px; padding: 5px 14px;">
-                                        <i class="fa-solid fa-plus"></i> {{ entry.qty_added }}
-                                    </span>
+                                <span class="badge success" style="font-size: 13px; padding: 5px 14px;">
+                                    <i class="fa-solid fa-plus"></i> {{ entry.qty_added }}
+                                </span>
                                 {% else %}
-                                    <span class="badge danger" style="font-size: 13px; padding: 5px 14px;">
-                                        <i class="fa-solid fa-minus"></i> {{ entry.qty_added|slice:"1:" }}
-                                    </span>
+                                <span class="badge danger" style="font-size: 13px; padding: 5px 14px;">
+                                    <i class="fa-solid fa-minus"></i> {{ entry.qty_added|slice:"1:" }}
+                                </span>
                                 {% endif %}
                             </td>
                             <td style="text-align: center;">
                                 <strong style="font-size: 15px; color: var(--text-main);">{{ entry.qty_after }}</strong>
                                 <span style="font-size: 11px; color: var(--text-muted); margin-left: 4px;">units</span>
                             </td>
-                            <td style="text-align: right; font-size: 12px; color: var(--text-muted);">
+                            <td
+                                style="text-align: right; font-size: 12px; color: var(--text-muted); white-space: nowrap;">
                                 {{ entry.recorded_at|date:"d M Y, h:i A" }}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
                             <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                                <i class="fa-solid fa-clock-rotate-left" style="font-size: 32px; display: block; margin-bottom: 10px; color: var(--text-muted);"></i>
+                                <i class="fa-solid fa-clock-rotate-left"
+                                    style="font-size: 32px; display: block; margin-bottom: 10px; color: var(--text-muted);"></i>
                                 No update history yet. History will appear here after the first stock update.
                             </td>
                         </tr>
@@ -392,45 +454,57 @@
         <div style="display: flex; align-items: center; gap: 12px;">
             <div class="search-box" style="max-width: 280px;">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" class="form-control" placeholder="Search stock list..." data-search-table="stockTableAdd">
+                <input type="text" class="form-control" placeholder="Search stock list..."
+                    data-search-table="stockTableAdd">
             </div>
             <!-- Download Dropdown -->
             <div style="position: relative; display: inline-block;">
-                <button onclick="var m=document.getElementById('stockAddDownloadMenu'); m.style.display = m.style.display==='block'?'none':'block';"
-                    class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap;">
+                <button
+                    onclick="var m=document.getElementById('stockAddDownloadMenu'); m.style.display = m.style.display==='block'?'none':'block';"
+                    class="btn btn-primary"
+                    style="display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap;">
                     <i class="fa-solid fa-download"></i> Download Report
                     <i class="fa-solid fa-chevron-down" style="font-size: 11px;"></i>
                 </button>
-                <div id="stockAddDownloadMenu" style="display:none; position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; overflow: hidden;">
+                <div id="stockAddDownloadMenu"
+                    style="display:none; position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; overflow: hidden;">
                     <!-- Stock Report -->
-                    <div style="padding: 7px 16px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">Stock Report</div>
+                    <div
+                        style="padding: 7px 16px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+                        Stock Report</div>
                     <a href="{% url 'stock_report_excel' %}"
-                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
-                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                        onmouseover="this.style.background='var(--primary-light)'"
+                        onmouseout="this.style.background=''">
                         <i class="fa-solid fa-file-excel" style="color: #16a34a; font-size: 15px;"></i> Excel
                     </a>
                     <a href="{% url 'stock_report_pdf' %}"
-                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
-                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                        onmouseover="this.style.background='var(--primary-light)'"
+                        onmouseout="this.style.background=''">
                         <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 15px;"></i> PDF
                     </a>
                     <!-- Stock History Report -->
-                    <div style="border-top: 1px solid var(--border-color); padding: 7px 16px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">Stock History</div>
+                    <div
+                        style="border-top: 1px solid var(--border-color); padding: 7px 16px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+                        Stock History</div>
                     <a href="{% url 'stock_all_history_excel' %}"
-                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
-                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                        onmouseover="this.style.background='var(--primary-light)'"
+                        onmouseout="this.style.background=''">
                         <i class="fa-solid fa-file-excel" style="color: #16a34a; font-size: 15px;"></i> Excel
                     </a>
                     <a href="{% url 'stock_all_history_pdf' %}"
-                       style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
-                       onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                        style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 600; transition: background 0.15s;"
+                        onmouseover="this.style.background='var(--primary-light)'"
+                        onmouseout="this.style.background=''">
                         <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 15px;"></i> PDF
                     </a>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <div class="card">
         <div class="card-body" style="padding: 0;">
             <div class="table-responsive">
@@ -452,23 +526,47 @@
                             <td>
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     {% if product.photo %}
-                                        <img src="{{ product.photo.url }}" alt="{{ product.name }}" style="width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color);">
+                                    <img src="{{ product.photo.url }}" alt="{{ product.name }}"
+                                        style="width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color);">
                                     {% elif product.image %}
-                                        <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color);">
+                                    <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                                        style="width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color);">
                                     {% else %}
-                                        <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid var(--border-color);">
-                                            <i class="fa-solid fa-image"></i>
-                                        </div>
+                                    <div
+                                        style="width: 36px; height: 36px; border-radius: var(--radius-sm); background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid var(--border-color);">
+                                        <i class="fa-solid fa-image"></i>
+                                    </div>
                                     {% endif %}
                                     <div>
                                         <div style="font-weight: 700; color: var(--text-main);">{{ product.name }}</div>
-                                        <div style="font-size: 11px; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        <div
+                                            style="font-size: 11px; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                             {{ product.description|default:"No specifications." }}
                                         </div>
                                         {% if product.vendor_cost or product.amount_paid_to_vendor or product.remaining_amount_to_vendor or product.vendor_due_date %}
-                                        <div style="font-size: 11px; color: var(--primary); margin-top: 4px; font-weight: 600;">
-                                            Vendor Cost: ₹{{ product.vendor_cost|default:"0.00" }} | Given: ₹{{ product.amount_paid_to_vendor|default:"0.00" }} | Due: ₹{{ product.remaining_amount_to_vendor|default:"0.00" }}
-                                            {% if product.vendor_due_date %} (Due: {{ product.vendor_due_date|date:"d M Y" }}){% endif %}
+                                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+                                            <span
+                                                style="font-size: 10px; background: rgba(59, 130, 246, 0.08); color: #3b82f6; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap;">
+                                                Unit Rate: ₹{{ product.vendor_cost|default:"0.00" }}
+                                            </span>
+                                            <span
+                                                style="font-size: 10px; background: rgba(16, 185, 129, 0.08); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap;">
+                                                Total Purchase: ₹{{ product.total_vendor_amount|default:"0.00" }}
+                                            </span>
+                                            <span
+                                                style="font-size: 10px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap;">
+                                                Paid: ₹{{ product.amount_paid_to_vendor|default:"0.00" }}
+                                            </span>
+                                            <span
+                                                style="font-size: 10px; background: rgba(239, 68, 68, 0.08); color: #ef4444; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap;">
+                                                Remaining Due: ₹{{ product.remaining_amount_to_vendor|default:"0.00" }}
+                                            </span>
+                                            {% if product.vendor_due_date %}
+                                            <span
+                                                style="font-size: 10px; background: rgba(107, 114, 128, 0.08); color: #6b7280; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap;">
+                                                Due Date: {{ product.vendor_due_date|date:"d M Y" }}
+                                            </span>
+                                            {% endif %}
                                         </div>
                                         {% endif %}
                                     </div>
@@ -476,17 +574,23 @@
                             </td>
                             <td><strong>{{ product.size|default:"—" }}</strong></td>
                             <td>{{ product.company_name|default:"General" }}</td>
-                            <td><span style="font-size: 12px; color: var(--text-muted);">{{ product.stock_entered|date:"d M Y"|default:"Not Logged" }}</span></td>
+                            <td style="white-space: nowrap;"><span style="font-size: 12px; color: var(--text-muted);">{{
+                                    product.stock_entered|date:"d M Y"|default:"Not Logged" }}</span></td>
                             <td><strong>₹{{ product.selling_price }}</strong></td>
                             <td><strong>{{ product.initial_quantity }}</strong></td>
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; gap: 8px;">
-                                    <a href="{% url 'stock_edit' product.id %}" class="btn btn-outline btn-sm" style="height: 30px; padding: 0 10px;" title="Edit Stock Item">
+                                    <a href="{% url 'stock_edit' product.id %}" class="btn btn-outline btn-sm"
+                                        style="height: 30px; padding: 0 10px;" title="Edit Stock Item">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
-                                    <form action="{% url 'stock_delete' product.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete this stock item?');" style="display: inline;">
+                                    <form action="{% url 'stock_delete' product.id %}" method="POST"
+                                        onsubmit="return confirm('Are you sure you want to delete this stock item?');"
+                                        style="display: inline;">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline btn-sm btn-danger" style="background: none; border-color: rgba(239,68,68,0.2); height: 30px; padding: 0 10px;" title="Delete Stock Item">
+                                        <button type="submit" class="btn btn-outline btn-sm btn-danger"
+                                            style="background: none; border-color: rgba(239,68,68,0.2); height: 30px; padding: 0 10px;"
+                                            title="Delete Stock Item">
                                             <i class="fa-solid fa-trash-can" style="color: var(--danger);"></i>
                                         </button>
                                     </form>
@@ -504,46 +608,51 @@
                 </table>
             </div>
         </div>
+    </div>
 </div>
 
 {% block extra_js %}
+<script id="existing-vendors-data" type="application/json">
+    {{ existing_vendors_json|safe|default:"[]" }}
+</script>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const sizeInput = document.getElementById('id_size');
-    if (!sizeInput) return;
+    document.addEventListener('DOMContentLoaded', () => {
+        const sizeInput = document.getElementById('id_size');
+        if (!sizeInput) return;
 
-    const unitButtons = document.querySelectorAll('.unit-btn');
-    const subOptionsContainer = document.getElementById('unit-sub-options');
+        const unitButtons = document.querySelectorAll('.unit-btn');
+        const subOptionsContainer = document.getElementById('unit-sub-options');
 
-    const subOptionsData = {
-        'ml': ['50ml', '100ml', '250ml', '500ml', '1L'],
-        'gram': ['50g', '100g', '250g', '500g'],
-        'kg': ['250gms', '500gms', '1kg']
-    };
+        const subOptionsData = {
+            'ml': ['50ml', '100ml', '250ml', '500ml', '1L'],
+            'gram': ['50g', '100g', '250g', '500g'],
+            'kg': ['250gms', '500gms', '1kg']
+        };
 
-    unitButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Update button styles to highlight selection
-            unitButtons.forEach(b => {
-                b.style.background = 'var(--bg-app)';
-                b.style.borderColor = 'var(--border-color)';
-                b.style.color = 'var(--text-main)';
-            });
-            btn.style.background = 'var(--primary-light)';
-            btn.style.borderColor = 'var(--primary)';
-            btn.style.color = 'var(--primary)';
+        unitButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update button styles to highlight selection
+                unitButtons.forEach(b => {
+                    b.style.background = 'var(--bg-app)';
+                    b.style.borderColor = 'var(--border-color)';
+                    b.style.color = 'var(--text-main)';
+                });
+                btn.style.background = 'var(--primary-light)';
+                btn.style.borderColor = 'var(--primary)';
+                btn.style.color = 'var(--primary)';
 
-            const unit = btn.getAttribute('data-unit');
-            const options = subOptionsData[unit] || [];
-            
-            subOptionsContainer.innerHTML = '';
-            
-            // 1. Add quick buttons
-            options.forEach(opt => {
-                const optBtn = document.createElement('button');
-                optBtn.type = 'button';
-                optBtn.textContent = opt;
-                optBtn.style.cssText = `
+                const unit = btn.getAttribute('data-unit');
+                const options = subOptionsData[unit] || [];
+
+                subOptionsContainer.innerHTML = '';
+
+                // 1. Add quick buttons
+                options.forEach(opt => {
+                    const optBtn = document.createElement('button');
+                    optBtn.type = 'button';
+                    optBtn.textContent = opt;
+                    optBtn.style.cssText = `
                     padding: 5px 12px;
                     border: 1px dashed var(--border-color);
                     border-radius: 20px;
@@ -554,69 +663,74 @@ document.addEventListener('DOMContentLoaded', () => {
                     cursor: pointer;
                     transition: all 0.15s ease;
                 `;
-                
-                optBtn.addEventListener('mouseover', () => {
-                    optBtn.style.borderColor = 'var(--primary)';
-                    optBtn.style.color = 'var(--primary)';
-                    optBtn.style.background = 'var(--primary-light)';
-                });
-                optBtn.addEventListener('mouseout', () => {
-                    optBtn.style.borderColor = 'var(--border-color)';
-                    optBtn.style.color = 'var(--text-muted)';
-                    optBtn.style.background = 'var(--bg-card)';
+
+                    optBtn.addEventListener('mouseover', () => {
+                        optBtn.style.borderColor = 'var(--primary)';
+                        optBtn.style.color = 'var(--primary)';
+                        optBtn.style.background = 'var(--primary-light)';
+                    });
+                    optBtn.addEventListener('mouseout', () => {
+                        optBtn.style.borderColor = 'var(--border-color)';
+                        optBtn.style.color = 'var(--text-muted)';
+                        optBtn.style.background = 'var(--bg-card)';
+                    });
+
+                    optBtn.addEventListener('click', () => {
+                        sizeInput.value = opt;
+                    });
+                    subOptionsContainer.appendChild(optBtn);
                 });
 
-                optBtn.addEventListener('click', () => {
-                    sizeInput.value = opt;
-                });
-                subOptionsContainer.appendChild(optBtn);
-            });
+                // 2. Add manual input wrapper
+                const manualWrap = document.createElement('div');
+                manualWrap.style.cssText = 'display: flex; align-items: center; gap: 6px; margin-left: 8px; border-left: 1px solid var(--border-color); padding-left: 12px;';
 
-            // 2. Add manual input wrapper
-            const manualWrap = document.createElement('div');
-            manualWrap.style.cssText = 'display: flex; align-items: center; gap: 6px; margin-left: 8px; border-left: 1px solid var(--border-color); padding-left: 12px;';
-            
-            const suffixMap = { 'ml': 'ml', 'gram': 'g', 'kg': 'gms' };
-            const activeSuffix = suffixMap[unit];
+                const suffixMap = { 'ml': 'ml', 'gram': 'g', 'kg': 'gms' };
+                const activeSuffix = suffixMap[unit];
 
-            manualWrap.innerHTML = `
+                manualWrap.innerHTML = `
                 <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Or Custom:</span>
                 <input type="text" placeholder="e.g. 150" class="custom-val-input" style="width: 70px; height: 28px; padding: 2px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; background: var(--bg-card); color: var(--text-main);">
                 <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">${activeSuffix}</span>
                 <button type="button" class="custom-val-btn" style="height: 28px; padding: 0 10px; font-size: 11px; font-weight: 700; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer;">Add</button>
             `;
 
-            const customValInput = manualWrap.querySelector('.custom-val-input');
-            const customValBtn = manualWrap.querySelector('.custom-val-btn');
+                const customValInput = manualWrap.querySelector('.custom-val-input');
+                const customValBtn = manualWrap.querySelector('.custom-val-btn');
 
-            const applyCustom = () => {
-                const customVal = customValInput.value.trim();
-                if (!customVal) return;
-                sizeInput.value = customVal + activeSuffix;
-                customValInput.value = '';
-            };
+                const applyCustom = () => {
+                    const customVal = customValInput.value.trim();
+                    if (!customVal) return;
+                    sizeInput.value = customVal + activeSuffix;
+                    customValInput.value = '';
+                };
 
-            customValBtn.addEventListener('click', applyCustom);
-            customValInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    applyCustom();
-                }
+                customValBtn.addEventListener('click', applyCustom);
+                customValInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyCustom();
+                    }
+                });
+
+                subOptionsContainer.appendChild(manualWrap);
             });
-
-            subOptionsContainer.appendChild(manualWrap);
         });
-    });
 
-    // Auto calculate Vendor Payment Details helper fields
-    const initialQtyInput = document.getElementById('id_initial_quantity');
-    const vendorCostInput = document.getElementById('id_vendor_cost');
-    const purchaseTotalInput = document.getElementById('id_purchase_total');
-    const totalVendorAmtInput = document.getElementById('id_total_vendor_amount');
-    const amountPaidInput = document.getElementById('id_amount_paid_to_vendor');
-    const remainingInput = document.getElementById('id_remaining_amount_to_vendor');
+        // Auto calculate Vendor Payment Details helper fields
+        const initialQtyInput = document.getElementById('id_initial_quantity');
+        const vendorCostInput = document.getElementById('id_vendor_cost');
+        const purchaseTotalInput = document.getElementById('id_purchase_total');
+        const totalVendorAmtInput = document.getElementById('id_total_vendor_amount');
+        const amountPaidInput = document.getElementById('id_amount_paid_to_vendor');
+        const remainingInput = document.getElementById('id_remaining_amount_to_vendor');
 
-    const isEditMode = {% if is_edit %}true{% else %}false{% endif %};
+        const isEditMode = "{{ is_edit }}" === "True";
+
+    // Store original database values on page load
+    const originalTotalAmt = parseFloat(totalVendorAmtInput ? totalVendorAmtInput.value : 0) || 0;
+    const originalRemainingAmt = parseFloat(remainingInput ? remainingInput.value : 0) || 0;
+    const originalPaidAmt = parseFloat(amountPaidInput ? amountPaidInput.value : 0) || 0;
 
     // Calculate and update the read-only display helper Total Amt (₹) in main section
     const updateMainPurchaseTotal = () => {
@@ -625,6 +739,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = qty * cost;
         if (purchaseTotalInput) {
             purchaseTotalInput.value = total > 0 ? total.toFixed(2) : "";
+        }
+        if (!isEditMode && totalVendorAmtInput) {
+            totalVendorAmtInput.value = total > 0 ? total.toFixed(2) : "";
+            calculateRemaining();
         }
     };
 
@@ -639,6 +757,57 @@ document.addEventListener('DOMContentLoaded', () => {
             const cost = addBatchCost.value.trim() !== "" ? (parseFloat(addBatchCost.value) || 0) : defaultCost;
             const total = qty * cost;
             addBatchTotalInput.value = total > 0 ? total.toFixed(2) : "";
+
+            // Trigger vendor payment details update
+            updateVendorPaymentBalances();
+        }
+    };
+
+    const updateVendorPaymentBalances = () => {
+        if (!isEditMode) return;
+
+        const addBatchQty = document.getElementById('id_add_batch_qty');
+        const addBatchTotalInput = document.getElementById('id_add_batch_total');
+        const addBatchPaidInput = document.getElementById('id_add_batch_paid');
+        const autoUpdateCheckbox = document.getElementById('id_auto_update_vendor_due');
+        const errorDiv = document.getElementById('batch-payment-error');
+        const submitBtn = document.querySelector('button[type="submit"]');
+
+        if (addBatchQty && addBatchTotalInput && addBatchPaidInput) {
+            const qty = parseFloat(addBatchQty.value) || 0;
+            const batchTotal = parseFloat(addBatchTotalInput.value) || 0;
+            const batchPaid = parseFloat(addBatchPaidInput.value) || 0;
+
+            // Validation: Payment cannot be greater than batch total
+            if (qty > 0 && batchPaid > batchTotal) {
+                if (errorDiv) {
+                    errorDiv.textContent = "Payment made for this batch cannot be greater than the batch total (" + batchTotal.toFixed(2) + ").";
+                    errorDiv.style.display = "block";
+                }
+                if (submitBtn) submitBtn.disabled = true;
+                return;
+            } else {
+                if (errorDiv) {
+                    errorDiv.style.display = "none";
+                }
+                if (submitBtn) submitBtn.disabled = false;
+            }
+
+            if (qty > 0 && autoUpdateCheckbox && autoUpdateCheckbox.checked) {
+                const currentOutstanding = Math.max(0.00, batchTotal - batchPaid);
+                const newTotal = originalTotalAmt + batchTotal;
+                const newPaid = originalPaidAmt + batchPaid;
+                const newRemaining = originalRemainingAmt + currentOutstanding;
+
+                if (totalVendorAmtInput) totalVendorAmtInput.value = newTotal.toFixed(2);
+                if (amountPaidInput) amountPaidInput.value = newPaid.toFixed(2);
+                if (remainingInput) remainingInput.value = newRemaining.toFixed(2);
+            } else {
+                // Restore original values
+                if (totalVendorAmtInput) totalVendorAmtInput.value = originalTotalAmt.toFixed(2);
+                if (amountPaidInput) amountPaidInput.value = originalPaidAmt.toFixed(2);
+                if (remainingInput) remainingInput.value = originalRemainingAmt.toFixed(2);
+            }
         }
     };
 
@@ -646,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = parseFloat(totalVendorAmtInput ? totalVendorAmtInput.value : 0) || 0;
         const paid = parseFloat(amountPaidInput ? amountPaidInput.value : 0) || 0;
         if (remainingInput) {
-            remainingInput.value = (total - paid).toFixed(2);
+            remainingInput.value = Math.max(0.00, total - paid).toFixed(2);
         }
     };
 
@@ -654,7 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = parseFloat(totalVendorAmtInput ? totalVendorAmtInput.value : 0) || 0;
         const remaining = parseFloat(remainingInput ? remainingInput.value : 0) || 0;
         if (amountPaidInput) {
-            amountPaidInput.value = (total - remaining).toFixed(2);
+            amountPaidInput.value = Math.max(0.00, total - remaining).toFixed(2);
         }
     };
 
@@ -665,8 +834,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Listeners for new batch consignment fields to update Total Amt helper box
     const addBatchQty = document.getElementById('id_add_batch_qty');
     const addBatchCost = document.getElementById('id_add_batch_cost');
+    const addBatchPaid = document.getElementById('id_add_batch_paid');
+    const autoUpdateCheckbox = document.getElementById('id_auto_update_vendor_due');
+
     if (addBatchQty) addBatchQty.addEventListener('input', updateBatchPurchaseTotal);
     if (addBatchCost) addBatchCost.addEventListener('input', updateBatchPurchaseTotal);
+    if (addBatchPaid) addBatchPaid.addEventListener('input', updateVendorPaymentBalances);
+    if (autoUpdateCheckbox) autoUpdateCheckbox.addEventListener('change', updateVendorPaymentBalances);
 
     // Listeners for manual adjustments of payment details to sync Paid <--> Remaining
     if (amountPaidInput) amountPaidInput.addEventListener('input', calculateRemaining);
@@ -681,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auto-fill due date and vendor details based on existing company details
     const companyNameInput = document.getElementById('id_company_name');
     const vendorDueDateInput = document.getElementById('id_vendor_due_date');
-    const existingVendors = {{ existing_vendors_json|safe|default:'[]' }};
+    const existingVendors = JSON.parse(document.getElementById('existing-vendors-data').textContent || '[]');
 
     if (companyNameInput && existingVendors.length > 0) {
         companyNameInput.addEventListener('input', () => {
@@ -691,15 +865,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (match) {
                 if (match.due_date && vendorDueDateInput) {
                     vendorDueDateInput.value = match.due_date;
-                }
-                if (match.total_vendor_amount !== undefined && totalVendorAmtInput) {
-                    totalVendorAmtInput.value = match.total_vendor_amount;
-                }
-                if (match.amount_paid_to_vendor !== undefined && amountPaidInput) {
-                    amountPaidInput.value = match.amount_paid_to_vendor;
-                }
-                if (match.remaining_amount_to_vendor !== undefined && remainingInput) {
-                    remainingInput.value = match.remaining_amount_to_vendor;
                 }
             }
         });

@@ -193,8 +193,15 @@
                             </a>
                         </td>
                         <td style="padding: 14px 16px;">
-                            <div style="font-weight: 600; color: var(--text-main);">{{ p.name }}</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Recd: {{ p.stock_entered|date:"d M Y"|default:"—" }}</div>
+                            {% for prod in p.products %}
+                            <div class="product-item">
+                                <div style="font-weight: 600; color: var(--text-main);">{{ prod.name }}</div>
+                                <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 2px;">
+                                    <span>Recd: {{ prod.stock_entered|date:"d M Y"|default:"—" }}</span>
+                                    <span style="font-weight: 600; color: var(--text-muted);">Due: ₹{{ prod.remaining_amount_to_vendor|floatformat:2 }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </td>
                         <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--success-text);">₹{{ p.amount_paid_to_vendor|floatformat:2 }}</td>
                         <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: var(--danger-text);">₹{{ p.remaining_amount_to_vendor|floatformat:2 }}</td>
@@ -202,7 +209,7 @@
                             <form method="POST" style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 6px;">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="update_due_date">
-                                <input type="hidden" name="product_id" value="{{ p.id }}">
+                                <input type="hidden" name="company_name" value="{{ p.company_name }}">
                                 <input type="date" name="vendor_due_date" value="{{ p.vendor_due_date|date:'Y-m-d'|default:'' }}"
                                        class="form-control"
                                        style="width: 125px; height: 32px; font-size: 12px; padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);"
@@ -212,7 +219,7 @@
                         <td style="padding: 14px 16px;">
                             <form method="POST" style="margin: 0; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
                                 {% csrf_token %}
-                                <input type="hidden" name="product_id" value="{{ p.id }}">
+                                <input type="hidden" name="company_name" value="{{ p.company_name }}">
                                 <div style="position: relative; display: flex; align-items: center; width: 100px;">
                                     <span style="position: absolute; left: 8px; font-size: 12px; color: var(--text-muted); font-weight: 600;">₹</span>
                                     <input type="number" name="pay_amount" step="0.01" min="0.01" 
@@ -327,6 +334,15 @@
 </script>
 
 <style>
+/* Product items in vendor ledger table */
+.product-item {
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+}
+.product-item:not(:last-child) {
+    border-bottom: 1px dashed var(--border-color);
+}
+
 /* Metrics Grid */
 .stats-grid {
     display: grid;
